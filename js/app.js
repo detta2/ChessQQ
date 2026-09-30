@@ -296,23 +296,29 @@ $("depth-seg").addEventListener("click", (e) => {
   [...$("depth-seg").children].forEach((x) => x.classList.toggle("on", x === b));
 });
 $("btn-analyze").addEventListener("click", async () => {
-  if (engine.isBusy()) { engine.stop(); setStatus("Dihentikan."); return; }
+  if (engine.isBusy()) {
+    engine.stop();
+    setStatus("Menghentikan…");
+    setTimeout(() => {
+      if (engine.isBusy()) {
+        engine.forceStop();
+        setAnalyzing(false);
+        setStatus("Dihentikan paksa. Tekan Analisis untuk mulai lagi.");
+      }
+    }, 3000);
+    return;
+  }
   exitPreview();
   const raw = fenInput.value.trim();
   if (raw && !loadFenString(raw)) return;
   const fen = chess.fen();
   hideResults(); clearArrows();
   setAnalyzing(true);
-  setStatus("Menyiapkan engine…");
+  setStatus("Mengunduh & menyiapkan engine…");
   $("progress").hidden = false;
+  $("progress-fill").style.width = "100%";
   try {
-    await engine.load((p) => {
-      if (p < 0) { setStatus("Mengunduh engine…"); $("progress-fill").style.width = "100%"; }
-      else {
-        setStatus(`Mengunduh engine… ${(p * 100).toFixed(0)}%`);
-        $("progress-fill").style.width = (p * 100).toFixed(0) + "%";
-      }
-    });
+    await engine.load();
   } catch (e) {
     setStatus("Gagal memuat engine: " + e.message);
     $("progress").hidden = true; setAnalyzing(false); return;
@@ -323,6 +329,10 @@ $("btn-analyze").addEventListener("click", async () => {
     (lines, d) => onEngineUpdate(lines, d),
     () => { setAnalyzing(false); setStatus(`Selesai — depth ${lastDepth}.`); }
   );
+});
+engine.onError((msg) => {
+  setStatus("Gagal: " + msg + " Coba tekan Analisis lagi.");
+  $("progress").hidden = true; setAnalyzing(false);
 });
 
 /* ---------- init ---------- */
