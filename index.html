@@ -1,0 +1,82 @@
+<!doctype html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>♞ Kalkulator Catur — Prediksi Langkah Musuh</title>
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+<header>
+  <h1>♞ Kalkulator Catur</h1>
+  <p>Tempel posisi → Stockfish memprediksi musuh bakal jalan ke mana</p>
+</header>
+
+<main>
+  <section class="board-wrap">
+    <div class="evalbar" title="Evaluasi (putih)">
+      <div id="evalfill"></div>
+      <span id="evallabel">0.0</span>
+    </div>
+    <div class="board-col">
+      <div id="board">
+        <div id="squares"></div>
+        <svg id="arrows" viewBox="0 0 800 800" preserveAspectRatio="none"></svg>
+        <button id="preview-chip" hidden>← Kembali ke posisi</button>
+      </div>
+      <div class="board-meta">
+        <span id="turn-chip">⚪ Putih jalan</span>
+        <button id="btn-flip" class="mini">⇄ Balik papan</button>
+      </div>
+    </div>
+  </section>
+
+  <section class="card">
+    <label for="fen">FEN posisi</label>
+    <div class="fen-row">
+      <input id="fen" spellcheck="false" autocomplete="off"
+        placeholder="rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1">
+      <button id="btn-paste" class="mini" title="Tempel dari clipboard">📋</button>
+    </div>
+    <div class="row">
+      <button id="btn-start" class="mini">♞ Posisi awal</button>
+      <button id="btn-clear" class="mini">🧹 Bersihkan</button>
+      <button id="btn-edit" class="mini">✏️ Edit posisi</button>
+    </div>
+    <div id="editor" hidden>
+      <div id="palette"></div>
+      <div class="row">
+        <span class="lbl">Giliran:</span>
+        <button id="turn-w" class="seg on">⚪ Putih</button>
+        <button id="turn-b" class="seg">⚫ Hitam</button>
+      </div>
+      <p class="tip">Ketuk bidak di atas, lalu ketuk kotak di papan. Ketuk 🧽 lalu kotak untuk menghapus.</p>
+    </div>
+  </section>
+
+  <section class="card">
+    <div class="row">
+      <div class="seg-group" id="depth-seg" role="group" aria-label="Kedalaman">
+        <button data-d="10">Kilat</button>
+        <button data-d="16" class="on">Normal</button>
+        <button data-d="22">Mendalam</button>
+      </div>
+      <button id="btn-analyze" class="primary">🔍 Analisis</button>
+    </div>
+    <div id="engine-status">Engine Stockfish 18 siap. Diunduh sekali (±7MB) saat pertama analisis.</div>
+    <div class="progress" id="progress" hidden><div id="progress-fill"></div></div>
+  </section>
+
+  <section class="card" id="results-card" hidden>
+    <h2>🎯 Prediksi langkah musuh</h2>
+    <p class="tip" id="predict-note"></p>
+    <ol id="moves"></ol>
+  </section>
+
+  <footer>Engine: Stockfish 18 · jalan 100% di HP kamu (WebAssembly), tanpa server, gratis.</footer>
+</main>
+
+<script src="js/engine.js"></script>
+<script type="module" src="js/app.js"></script>
+</body>
+</html>
