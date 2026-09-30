@@ -109,3 +109,13 @@ footer{text-align:center; color:var(--muted); font-size:11px; margin-top:18px; l
   border-bottom: 1px solid #334155; }
 #dbg-log { margin: 0; padding: 6px 10px; overflow-y: auto; font-size: 10.5px;
   line-height: 1.45; color: #a5f3fc; white-space: pre-wrap; word-break: break-all; }
+
+/* gerak bidak */
+#squares{ touch-action:none; }
+.hint{ position:absolute; width:26%; height:26%; border-radius:50%;
+  background:rgba(15,25,15,.38); pointer-events:none; }
+.hint.cap{ width:86%; height:86%; background:transparent;
+  border:5px solid rgba(220,50,50,.6); border-radius:50%; }
+.drag-ghost{ position:fixed; width:58px; height:58px; z-index:200;
+  transform:translate(-50%,-62%); pointer-events:none; opacity:.94;
+  filter:drop-shadow(0 6px 8px rgba(0,0,0,.4)); }

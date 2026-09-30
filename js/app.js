@@ -52,12 +52,13 @@ function renderBoard(fen) {
         img.alt = ""; img.draggable = false;
         d.appendChild(img);
       }
-      d.addEventListener("click", () => onSquare(sq));
+      d.addEventListener("pointerdown", (e) => onPointerDown(e, sq));
       squaresEl.appendChild(d);
     }
   }
   const t = new Chess(fen).turn();
   $("turn-chip").textContent = t === "w" ? "⚪ Putih jalan" : "⚫ Hitam jalan";
+  paintSelection();
 }
 
 /* ---------- panah ---------- */
@@ -168,9 +169,8 @@ function fixCastling() {
   if (is("e8", "k", "b") && is("a8", "r", "b")) cs += "q";
   chess.load(`${placement} ${chess.turn()} ${cs || "-"} - 0 1`);
 }
-function onSquare(sq) {
-  if (previewFen) return;
-  if (!editMode) return;
+/* tap di mode edit: taruh/hapus bidak */
+function editTap(sq) {
   if (!paletteSel) { setStatus("Pilih dulu bidak di palet (atau 🧽 penghapus)."); return; }
   if (paletteSel === "x") chess.remove(sq);
   else chess.put({ type: paletteSel.type, color: paletteSel.color }, sq);
@@ -183,6 +183,91 @@ function setTurnUI(t) {
   $("turn-w").classList.toggle("on", t === "w");
   $("turn-b").classList.toggle("on", t === "b");
   syncFen(); renderBoard();
+}
+
+/* ---------- gerak bidak: ketuk-ketuk atau geser ---------- */
+let sel = null;          // kotak yang dipilih
+let hintMoves = [];      // langkah legal (verbose) dari sel
+let dragGhost = null;
+
+function paintSelection() {
+  if (!sel) return;
+  const sEl = squaresEl.querySelector('[data-sq="' + sel + '"]');
+  if (sEl) sEl.classList.add("sel");
+  hintMoves.forEach((m) => {
+    const t = squaresEl.querySelector('[data-sq="' + m.to + '"]');
+    if (!t) return;
+    const dot = document.createElement("span");
+    dot.className = "hint" + (m.captured ? " cap" : "");
+    t.appendChild(dot);
+  });
+}
+function clearSel() { sel = null; hintMoves = []; }
+
+function tryMove(from, to) {
+  try {
+    const p = chess.get(from);
+    if (!p) return false;
+    const promo = (p.type === "p" && (to[1] === "8" || to[1] === "1")) ? "q" : undefined;
+    const m = chess.move({ from, to, promotion: promo });
+    if (!m) return false;
+    exitPreview(); syncFen(); renderBoard(); clearArrows(); hideResults();
+    setStatus("Langkah: " + m.san + " — tekan Analisis untuk prediksi baru.");
+    return true;
+  } catch (e) { return false; }
+}
+
+function onPointerDown(e, sq) {
+  if (previewFen) return;
+  if (editMode) { editTap(sq); return; }
+  e.preventDefault();
+  if (sel && sq !== sel && tryMove(sel, sq)) { clearSel(); renderBoard(); return; }
+  const pc = chess.get(sq);
+  if (pc && sq !== sel) {
+    sel = sq;
+    try { hintMoves = chess.moves({ square: sq, verbose: true }); }
+    catch (err) { hintMoves = []; }
+    renderBoard();
+    startGhost(e, sq);
+  } else {
+    clearSel(); renderBoard();
+  }
+}
+
+function startGhost(e, sq) {
+  const pc = chess.get(sq);
+  if (!pc || !e.isPrimary) return;
+  const sx = e.clientX, sy = e.clientY;
+  let moved = false;
+  const img = document.createElement("img");
+  img.src = "img/pieces/" + pc.color + pc.type.toUpperCase() + ".svg";
+  img.className = "drag-ghost";
+  img.style.left = sx + "px"; img.style.top = sy + "px";
+  document.body.appendChild(img);
+  dragGhost = img;
+  const onMove = (ev) => {
+    if (!dragGhost) return;
+    if (Math.hypot(ev.clientX - sx, ev.clientY - sy) > 10) moved = true;
+    if (moved) { dragGhost.style.left = ev.clientX + "px"; dragGhost.style.top = ev.clientY + "px"; }
+  };
+  const onUp = (ev) => {
+    window.removeEventListener("pointermove", onMove);
+    window.removeEventListener("pointerup", onUp);
+    window.removeEventListener("pointercancel", onUp);
+    if (dragGhost) { dragGhost.remove(); dragGhost = null; }
+    if (!moved) return; // cuma tap → seleksi tetap, tunggu ketukan kedua
+    let to = null;
+    try {
+      const el = document.elementFromPoint(ev.clientX, ev.clientY);
+      const sqEl = el && el.closest ? el.closest("[data-sq]") : null;
+      to = sqEl ? sqEl.dataset.sq : null;
+    } catch (err) { /* abaikan */ }
+    clearSel();
+    if (to && to !== sq) tryMove(sq, to); else renderBoard();
+  };
+  window.addEventListener("pointermove", onMove);
+  window.addEventListener("pointerup", onUp);
+  window.addEventListener("pointercancel", onUp);
 }
 
 /* ---------- engine ---------- */
