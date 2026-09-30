@@ -91,20 +91,19 @@ function drawArrows(moves) {
       `L${sx - nx * w / 2},${sy - ny * w / 2}Z`;
     const g = document.createElementNS("http://www.w3.org/2000/svg", "g");
     g.setAttribute("class", "arrow");
-    const casing = document.createElementNS("http://www.w3.org/2000/svg", "path");
-    casing.setAttribute("d", d);
-    casing.setAttribute("fill", "rgba(8,10,14,.45)");
-    casing.setAttribute("stroke", "rgba(8,10,14,.45)");
-    casing.setAttribute("stroke-width", "15");
-    casing.setAttribute("stroke-linejoin", "round");
+    // gaya "3D Dimensi": bayangan offset di bawah-kanan + panah utama + kilau tepi
+    const shadow = document.createElementNS("http://www.w3.org/2000/svg", "path");
+    shadow.setAttribute("d", d);
+    shadow.setAttribute("fill", "rgba(5,6,9,.6)");
+    shadow.setAttribute("transform", "translate(11,13)");
     const p = document.createElementNS("http://www.w3.org/2000/svg", "path");
     p.setAttribute("d", d);
     p.setAttribute("fill", c);
-    p.setAttribute("stroke", c);
-    p.setAttribute("stroke-width", "7");
+    p.setAttribute("stroke", "rgba(255,255,255,.35)");
+    p.setAttribute("stroke-width", "3");
     p.setAttribute("stroke-linejoin", "round");
-    p.setAttribute("fill-opacity", ".93");
-    g.appendChild(casing); g.appendChild(p);
+    p.setAttribute("fill-opacity", ".96");
+    g.appendChild(shadow); g.appendChild(p);
     arrowsEl.appendChild(g);
   });
 }
