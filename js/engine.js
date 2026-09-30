@@ -110,7 +110,7 @@
     var depth = +info[1],
       kind = info[2],
       val = +info[3],
-      pv = info[5].trim().split(/\s+/);
+      pv = info[4].trim().split(/\s+/);
     var mm = line.match(/\bmultipv\s+(\d+)/);
     var multipv = mm ? +mm[1] : 1;
     if (depth < this._depthSeen) return;

@@ -325,6 +325,7 @@ $("btn-analyze").addEventListener("click", async () => {
   }
   $("progress").hidden = true;
   setStatus("Mikir…");
+  lastDepth = depth;
   engine.analyze(fen, depth,
     (lines, d) => onEngineUpdate(lines, d),
     () => { setAnalyzing(false); setStatus(`Selesai — depth ${lastDepth}.`); }
