@@ -19,6 +19,10 @@
     this._onError = cb;
   };
 
+  ChessEngine.prototype.onRaw = function (cb) {
+    this._onRaw = cb;
+  };
+
   ChessEngine.prototype._fail = function (msg) {
     this._busy = false;
     this._loadPromise = null; // biar bisa coba lagi
@@ -55,6 +59,7 @@
 
       w.onmessage = function (e) {
         var line = String(e.data);
+        if (self._onRaw) self._onRaw("← " + line.slice(0, 200));
         if (!self.ready) {
           if (line === "uciok") {
             done = true;
@@ -68,6 +73,7 @@
         self._handle(line);
       };
       w.onerror = function (e) {
+        if (self._onRaw) self._onRaw("⚠ worker error: " + (e.message || e.type || "?"));
         if (!done) {
           done = true;
           clearTimeout(timer);
@@ -128,6 +134,7 @@
       self.worker.postMessage("ucinewgame");
       self.worker.postMessage("position fen " + fen);
       self.worker.postMessage("go depth " + depth);
+      if (self._onRaw) self._onRaw("→ go depth " + depth + " @ " + new Date().toISOString());
     };
     if (this._busy) {
       var prev = this._onBest;

@@ -340,3 +340,22 @@ buildPalette();
 syncFen();
 renderBoard();
 setEvalBar(20, "cp");
+
+/* Debug: ?debug=1 menampilkan log mentah engine */
+if (location.search.includes("debug")) {
+  const dbg = document.getElementById("debug");
+  dbg.hidden = false;
+  const logEl = document.getElementById("dbg-log");
+  const dlog = (m) => {
+    logEl.textContent += m + "\n";
+    logEl.scrollTop = logEl.scrollHeight;
+  };
+  dlog("debug aktif @ " + new Date().toISOString());
+  engine.onRaw(dlog);
+  window.addEventListener("error", (e) => dlog("⚠ window error: " + e.message));
+  setInterval(() => {
+    document.getElementById("dbg-clock").textContent =
+      new Date().toISOString().slice(11, 19) +
+      " busy=" + engine.isBusy() + " ready=" + engine.ready;
+  }, 1000);
+}
