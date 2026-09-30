@@ -84,6 +84,7 @@ main{max-width:560px; margin:0 auto; padding:14px 16px 150px}
   border-radius:var(--r-md); padding:11px 12px; font-size:12px}
 #fen:focus{outline:none; border-color:var(--gold)}
 #fen::placeholder{color:#5b6577}
+#fen.bad{border-color:#ef4444; box-shadow:0 0 0 1px #ef4444}
 
 .mini{background:var(--surface2); border:1px solid var(--line); color:var(--text);
   border-radius:var(--r-md); padding:10px 12px; font-size:13px; font-weight:600}
