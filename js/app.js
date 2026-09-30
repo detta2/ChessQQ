@@ -344,10 +344,9 @@ function renderResults() {
   lastResults.forEach((m, i) => {
     const li = document.createElement("li");
     li.innerHTML =
-      `<span class="dot" style="background:${ARROW_COLORS[i]}"></span>` +
-      `<span class="san">${m.san}</span>` +
-      `<span class="eval">${m.eval}</span>` +
-      `<span class="pv">${m.pv.join(" ")}</span>`;
+      `<span class="rank r${i + 1}">${i + 1}</span>` +
+      `<div class="mv-main"><div class="san">${m.san}</div><div class="pv">${m.pv.join(" ")}</div></div>` +
+      `<span class="eval ${String(m.eval).startsWith("-") ? "minus" : "plus"}">${m.eval}</span>`;
     li.addEventListener("click", () => previewMove(i));
     ol.appendChild(li);
   });
