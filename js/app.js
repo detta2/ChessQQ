@@ -62,28 +62,53 @@ function renderBoard(fen) {
 }
 
 /* ---------- panah ---------- */
+let lastArrowKey = "";
 function drawArrows(moves) {
-  arrowsEl.innerHTML =
-    '<defs>' + ARROW_COLORS.map((c, i) =>
-      `<marker id="ah${i}" markerWidth="54" markerHeight="54" refX="38" refY="27" orient="auto" markerUnits="userSpaceOnUse"><path d="M0,0 L54,27 L0,54 z" fill="${c}"/></marker>`
-    ).join("") + "</defs>";
-  moves.slice(0, 3).reverse().forEach((m, ri) => {
-    const i = moves.slice(0, 3).length - 1 - ri;
+  const top = moves.slice(0, 3);
+  const key = top.map((m) => m.uci).join("|");
+  if (key === lastArrowKey) return; // gambar ulang hanya kalau 3 besar berubah
+  lastArrowKey = key;
+  arrowsEl.innerHTML = "";
+  const widths = [30, 26, 22];
+  top.reverse().forEach((m, ri) => {
+    const i = top.length - 1 - ri; // i=0 (terbaik) digambar paling atas
     const c = ARROW_COLORS[i];
     const [x1, y1] = sqCenter(m.from), [x2, y2] = sqCenter(m.to);
     const dx = x2 - x1, dy = y2 - y1, len = Math.hypot(dx, dy) || 1;
-    const sx = x1 + (dx / len) * 14, sy = y1 + (dy / len) * 14;
-    const ex = x2 - (dx / len) * 52, ey = y2 - (dy / len) * 52;
-    const line = document.createElementNS("http://www.w3.org/2000/svg", "line");
-    line.setAttribute("x1", sx); line.setAttribute("y1", sy);
-    line.setAttribute("x2", ex); line.setAttribute("y2", ey);
-    line.setAttribute("stroke", c); line.setAttribute("stroke-width", "30");
-    line.setAttribute("stroke-linecap", "round"); line.setAttribute("opacity", ".78");
-    line.setAttribute("marker-end", `url(#ah${i})`);
-    arrowsEl.appendChild(line);
+    const ux = dx / len, uy = dy / len, nx = -uy, ny = ux;
+    const w = widths[i] || 22, hw = w * 1.4;
+    const headLen = Math.min(66, len * 0.45);
+    const sx = x1 + ux * 16, sy = y1 + uy * 16;          // pangkal
+    const tx = x2 - ux * 26, ty = y2 - uy * 26;          // ujung
+    const bx = tx - ux * headLen, by = ty - uy * headLen; // dasar kepala
+    const d =
+      `M${sx + nx * w / 2},${sy + ny * w / 2}` +
+      `L${bx + nx * w / 2},${by + ny * w / 2}` +
+      `L${bx + nx * hw},${by + ny * hw}` +
+      `L${tx},${ty}` +
+      `L${bx - nx * hw},${by - ny * hw}` +
+      `L${bx - nx * w / 2},${by - ny * w / 2}` +
+      `L${sx - nx * w / 2},${sy - ny * w / 2}Z`;
+    const g = document.createElementNS("http://www.w3.org/2000/svg", "g");
+    g.setAttribute("class", "arrow");
+    const casing = document.createElementNS("http://www.w3.org/2000/svg", "path");
+    casing.setAttribute("d", d);
+    casing.setAttribute("fill", "rgba(8,10,14,.45)");
+    casing.setAttribute("stroke", "rgba(8,10,14,.45)");
+    casing.setAttribute("stroke-width", "15");
+    casing.setAttribute("stroke-linejoin", "round");
+    const p = document.createElementNS("http://www.w3.org/2000/svg", "path");
+    p.setAttribute("d", d);
+    p.setAttribute("fill", c);
+    p.setAttribute("stroke", c);
+    p.setAttribute("stroke-width", "7");
+    p.setAttribute("stroke-linejoin", "round");
+    p.setAttribute("fill-opacity", ".93");
+    g.appendChild(casing); g.appendChild(p);
+    arrowsEl.appendChild(g);
   });
 }
-function clearArrows() { arrowsEl.innerHTML = ""; }
+function clearArrows() { arrowsEl.innerHTML = ""; lastArrowKey = ""; }
 
 /* ---------- FEN ---------- */
 function syncFen() { fenInput.value = chess.fen(); fenInput.classList.remove("bad"); }
