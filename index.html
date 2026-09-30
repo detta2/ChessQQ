@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>♞ Kalkulator Catur — Prediksi Langkah Musuh</title>
-<link rel="stylesheet" href="css/style.css?v=6">
+<link rel="stylesheet" href="css/style.css?v=7">
 </head>
 <body>
 <header class="topbar">
@@ -20,14 +20,14 @@
 <main>
   <section class="board-sec">
     <div class="board-wrap">
+      <div class="evalbar" title="Evaluasi (perspektif putih)">
+        <div class="eval-track"><div id="evalfill"></div></div>
+        <span id="evallabel">0.0</span>
+      </div>
       <div id="board">
         <div id="squares"></div>
         <svg id="arrows" viewBox="0 0 800 800" preserveAspectRatio="none"></svg>
         <button id="preview-chip" hidden>← Kembali ke posisi</button>
-      </div>
-      <div class="evalbar" title="Evaluasi (perspektif putih)">
-        <div id="evalfill"></div>
-        <span id="evallabel">0.0</span>
       </div>
     </div>
     <div class="board-meta">
@@ -85,7 +85,7 @@
   <div class="dbg-head">DEBUG <span id="dbg-clock"></span></div>
   <pre id="dbg-log"></pre>
 </div>
-<script src="js/engine.js?v=6"></script>
-<script type="module" src="js/app.js?v=6"></script>
+<script src="js/engine.js?v=7"></script>
+<script type="module" src="js/app.js?v=7"></script>
 </body>
 </html>

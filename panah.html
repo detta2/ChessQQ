@@ -1,0 +1,99 @@
+<!doctype html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Pilih gaya panah</title>
+<style>
+:root{--bg:#0b0e13;--text:#edf0f5;--muted:#9aa4b5;--gold:#f2b13d}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--text);
+  font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;padding:20px 16px 40px}
+h1{font-size:20px;text-align:center;margin:0 0 4px}
+.sub{text-align:center;color:var(--muted);font-size:13px;margin:0 0 18px}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:14px;max-width:760px;margin:0 auto}
+@media(max-width:560px){.grid{grid-template-columns:1fr}}
+.opt{background:#131822;border:1px solid rgba(255,255,255,.09);border-radius:18px;padding:14px;position:relative}
+.num{position:absolute;top:10px;left:14px;font-size:30px;font-weight:800;color:var(--gold);z-index:2;
+  text-shadow:0 2px 8px rgba(0,0,0,.7)}
+.nm{text-align:center;font-weight:700;margin:10px 0 2px;font-size:15px}
+.ds{text-align:center;color:var(--muted);font-size:12px;margin:0}
+.mini-board{position:relative;width:100%;aspect-ratio:1;border-radius:12px;overflow:hidden}
+.sq-grid{display:grid;grid-template-columns:repeat(8,1fr);grid-template-rows:repeat(8,1fr);width:100%;height:100%}
+.sq.l{background:#f0d9b5}.sq.d{background:#b58863}
+svg.ar{position:absolute;inset:0;width:100%;height:100%;pointer-events:none}
+</style>
+</head>
+<body>
+<h1>Mau panah yang mana?</h1>
+<p class="sub">Balas dengan nomornya (1–4)</p>
+<div class="grid">
+  <div class="opt"><div class="num">1</div><div class="mini-board"><div class="sq-grid"></div><svg class="ar" id="a1" viewBox="0 0 800 800"></svg></div><p class="nm">Ramping</p><p class="ds">yang sekarang · garis tegas + outline gelap</p></div>
+  <div class="opt"><div class="num">2</div><div class="mini-board"><div class="sq-grid"></div><svg class="ar" id="a2" viewBox="0 0 800 800"></svg></div><p class="nm">Tebal Lembut</p><p class="ds">ala lichess · besar tapi transparan</p></div>
+  <div class="opt"><div class="num">3</div><div class="mini-board"><div class="sq-grid"></div><svg class="ar" id="a3" viewBox="0 0 800 800"></svg></div><p class="nm">Garis Tipis</p><p class="ds">minimalis · elegan, nggak nutupin bidak</p></div>
+  <div class="opt"><div class="num">4</div><div class="mini-board"><div class="sq-grid"></div><svg class="ar" id="a4" viewBox="0 0 800 800"></svg></div><p class="nm">Melengkung</p><p class="ds">berbeda sendiri · panah melengkung</p></div>
+</div>
+<script>
+document.querySelectorAll('.sq-grid').forEach(g=>{
+  for(let r=0;r<8;r++)for(let f=0;f<8;f++){const d=document.createElement('div');d.className='sq '+(((r+f)%2)?'d':'l');g.appendChild(d);}
+});
+const NS='http://www.w3.org/2000/svg';
+function sqC(sq){const f=sq.charCodeAt(0)-97,r=+sq[1];return [f*100+50,(8-r)*100+50];}
+const MOVES=[{from:'e2',to:'e4'},{from:'g1',to:'f3'},{from:'d7',to:'d5'}];
+const COLORS=['#22c55e','#eab308','#ef4444'];
+function el(n,at){const e=document.createElementNS(NS,n);for(const k in at)e.setAttribute(k,at[k]);return e;}
+// bentuk panah lurus: {d, w} -> path "batang + kepala"
+function straight(x1,y1,x2,y2,w,headLen){
+  const dx=x2-x1,dy=y2-y1,len=Math.hypot(dx,dy)||1;
+  const ux=dx/len,uy=dy/len,nx=-uy,ny=ux,hw=w*1.4;
+  const sx=x1+ux*16,sy=y1+uy*16,tx=x2-ux*26,ty=y2-uy*26;
+  const bx=tx-ux*headLen,by=ty-uy*headLen;
+  return `M${sx+nx*w/2},${sy+ny*w/2}L${bx+nx*w/2},${by+ny*w/2}L${bx+nx*hw},${by+ny*hw}L${tx},${ty}L${bx-nx*hw},${by-ny*hw}L${bx-nx*w/2},${by-ny*w/2}L${sx-nx*w/2},${sy-ny*w/2}Z`;
+}
+// 1 — ramping + outline (yang sekarang)
+(function(){const svg=document.getElementById('a1');const W=[30,26,22];
+  [...MOVES].reverse().forEach((m,ri)=>{const i=MOVES.length-1-ri;const c=COLORS[i];
+    const [x1,y1]=sqC(m.from),[x2,y2]=sqC(m.to);
+    const len=Math.hypot(x2-x1,y2-y1);
+    const d=straight(x1,y1,x2,y2,W[i],Math.min(66,len*0.45));
+    const g=el('g',{});
+    g.appendChild(el('path',{d,fill:'rgba(8,10,14,.45)',stroke:'rgba(8,10,14,.45)','stroke-width':15,'stroke-linejoin':'round'}));
+    g.appendChild(el('path',{d,fill:c,stroke:c,'stroke-width':7,'stroke-linejoin':'round','fill-opacity':.93}));
+    svg.appendChild(g);});})();
+// 2 — tebal lembut transparan
+(function(){const svg=document.getElementById('a2');const W=[48,44,40];
+  [...MOVES].reverse().forEach((m,ri)=>{const i=MOVES.length-1-ri;const c=COLORS[i];
+    const [x1,y1]=sqC(m.from),[x2,y2]=sqC(m.to);
+    const len=Math.hypot(x2-x1,y2-y1);
+    const d=straight(x1,y1,x2,y2,W[i],Math.min(74,len*0.5));
+    svg.appendChild(el('path',{d,fill:c,stroke:c,'stroke-width':12,'stroke-linejoin':'round','fill-opacity':.55}));});})();
+// 3 — garis tipis minimalis
+(function(){const svg=document.getElementById('a3');const W=[13,12,11];
+  [...MOVES].reverse().forEach((m,ri)=>{const i=MOVES.length-1-ri;const c=COLORS[i];
+    const [x1,y1]=sqC(m.from),[x2,y2]=sqC(m.to);
+    const len=Math.hypot(x2-x1,y2-y1);
+    const d=straight(x1,y1,x2,y2,W[i],44);
+    svg.appendChild(el('path',{d,fill:c,stroke:c,'stroke-width':4,'stroke-linejoin':'round','fill-opacity':.95}));})();
+// 4 — melengkung
+(function(){const svg=document.getElementById('a4');const W=[26,24,22];
+  [...MOVES].reverse().forEach((m,ri)=>{const i=MOVES.length-1-ri;const c=COLORS[i];
+    const [x1,y1]=sqC(m.from),[x2,y2]=sqC(m.to);
+    const dx=x2-x1,dy=y2-y1,len=Math.hypot(dx,dy)||1;
+    const ux=dx/len,uy=dy/len,nx=-uy,ny=ux;
+    const sx=x1+ux*20,sy=y1+uy*20,tx=x2-ux*34,ty=y2-uy*34;
+    const mx=(sx+tx)/2+nx*len*0.14,my=(sy+ty)/2+ny*len*0.14;
+    const d=`M${sx},${sy} Q${mx},${my} ${tx},${ty}`;
+    // arah singgung di ujung untuk kepala panah
+    const tvx=tx-mx,tvy=ty-my,tl=Math.hypot(tvx,tvy)||1;
+    const txu=tvx/tl,tyu=tvy/tl,tnx=-tyu,tny=txu;
+    const hl=58,hw2=30;
+    const bx=tx-txu*hl,by=ty-tyu*hl;
+    const hd=`M${tx},${ty} L${bx+tnx*hw2},${by+tny*hw2} L${bx-tnx*hw2},${by-tny*hw2} Z`;
+    const g=el('g',{});
+    g.appendChild(el('path',{d,fill:'none',stroke:'rgba(8,10,14,.45)','stroke-width':W[i]+14,'stroke-linecap':'round'}));
+    g.appendChild(el('path',{d:hd,fill:'rgba(8,10,14,.45)'}));
+    g.appendChild(el('path',{d,fill:'none',stroke:c,'stroke-width':W[i],'stroke-linecap':'round','stroke-opacity':.92}));
+    g.appendChild(el('path',{d:hd,fill:c,'fill-opacity':.92}));
+    svg.appendChild(g);});})();
+</script>
+</body>
+</html>
