@@ -1,5 +1,6 @@
-/* ChessQQ — UI papan, editor, panah prediksi, hasil analisis. */
+/* ChessQQ — UI papan, editor, panah prediksi, hasil analisis, mentor. */
 import { Chess, validateFen } from "./chess.js";
+import { mentorFor } from "./mentor.js";
 
 const $ = (id) => document.getElementById(id);
 const squaresEl = $("squares"), arrowsEl = $("arrows"), fenInput = $("fen");
@@ -348,6 +349,7 @@ function onEngineUpdate(lines, d) {
       uci, from: uci.slice(0, 2), to: uci.slice(2, 4),
       san: uciToSan(fen, uci) || uci,
       eval: fmtEval(wp, L.kind), wp, kind: L.kind,
+      score: L.val, // mentah, relatif ke pihak yang jalan (untuk mentor)
       pv: pvToSans(fen, L.pv, 12),
     };
   });
@@ -374,8 +376,44 @@ function renderResults() {
     li.addEventListener("click", () => previewMove(i));
     ol.appendChild(li);
   });
+  renderMentor();
 }
-function hideResults() { $("results-card").hidden = true; lastResults = []; }
+function hideResults() { $("results-card").hidden = true; $("mentor-card").hidden = true; lastResults = []; }
+
+/* ---------- mentor ---------- */
+function renderMentor() {
+  const card = $("mentor-card"), body = $("mentor-body");
+  const turn = chess.turn();
+  let m;
+  try { m = mentorFor(chess.fen(), lastResults, turn); }
+  catch (e) { card.hidden = true; return; }
+  card.hidden = false;
+  const esc = (s) => String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;");
+  let html = `<p class="mentor-title">${esc(m.judul)}</p>`;
+  if (m.selesai) {
+    html += `<ul class="mentor-list">${m.baris.map((b) => `<li>${esc(b)}</li>`).join("")}</ul>`;
+  } else {
+    html += `<div class="mentor-rec"><span class="mentor-san">${esc(m.langkah)}</span>` +
+      `<button id="btn-mentor-play" class="primary small">▶️ Mainkan</button></div>`;
+    html += `<ul class="mentor-list">${m.baris.map((b) => `<li>${esc(b)}</li>`).join("")}</ul>`;
+    if (m.alternatif.length)
+      html += `<p class="mentor-alt"><b>Pilihan lain:</b> ` +
+        m.alternatif.map((a) => `${esc(a.san)} <span class="alt-why">(${esc(a.alasan)})</span>`).join(" · ") + `</p>`;
+    if (m.strategi.length)
+      html += `<p class="mentor-sub">🧭 Strategi posisi ini:</p><ul class="mentor-list strat">` +
+        m.strategi.map((s) => `<li>${esc(s)}</li>`).join("") + `</ul>`;
+  }
+  body.innerHTML = html;
+  const bp = $("btn-mentor-play");
+  if (bp) bp.addEventListener("click", () => {
+    try {
+      const u = m.uci;
+      chess.move({ from: u.slice(0, 2), to: u.slice(2, 4), promotion: u.length > 4 ? u[4] : undefined });
+      exitPreview(); syncFen(); renderBoard(); clearArrows(); hideResults();
+      setStatus("Mentor memainkan " + m.langkah + " — tekan Analisis untuk lanjut.");
+    } catch (e) { setStatus("Langkah mentor gagal dimainkan."); }
+  });
+}
 function previewMove(i) {
   const m = lastResults[i];
   if (!m) return;
