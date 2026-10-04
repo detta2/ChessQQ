@@ -1,6 +1,6 @@
 /* ChessQQ — UI papan, editor, panah prediksi, hasil analisis, mentor. */
-import { Chess, validateFen } from "./chess.js";
-import { mentorFor } from "./mentor.js";
+import { Chess, validateFen } from "./chess.js?v=13";
+import { mentorFor } from "./mentor.js?v=13";
 
 const $ = (id) => document.getElementById(id);
 const squaresEl = $("squares"), arrowsEl = $("arrows"), fenInput = $("fen");
