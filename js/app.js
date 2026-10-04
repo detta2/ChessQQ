@@ -411,7 +411,11 @@ function renderMentor() {
   } else {
     html += `<div class="mentor-rec"><span class="mentor-san">${esc(m.langkah)}</span>` +
       `<button id="btn-mentor-play" class="primary small">▶️ Mainkan</button></div>`;
+    html += `<p class="mentor-sub">💡 Kenapa langkah ini?</p>`;
     html += `<ul class="mentor-list">${m.baris.map((b) => `<li>${esc(b)}</li>`).join("")}</ul>`;
+    if (m.rencana && m.rencana.length)
+      html += `<p class="mentor-sub">🗺️ Rencana berikutmu:</p><ul class="mentor-list plan">` +
+        m.rencana.map((r) => `<li><b>${esc(r.san)}</b> — ${esc(r.alasan)}</li>`).join("") + `</ul>`;
     if (m.alternatif.length)
       html += `<p class="mentor-alt"><b>Pilihan lain:</b> ` +
         m.alternatif.map((a) => `${esc(a.san)} <span class="alt-why">(${esc(a.alasan)})</span>`).join(" · ") + `</p>`;

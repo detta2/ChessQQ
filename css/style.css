@@ -204,6 +204,7 @@ button.primary.small{padding:8px 14px; font-size:13px; border-radius:10px}
   font-size:13.5px; color:var(--text)}
 .mentor-list li::marker{color:var(--gold)}
 .mentor-list.strat li::marker{content:"🧭 "}
+.mentor-list.plan li::marker{content:"🗺️ "}
 .mentor-alt{font-size:13px; color:var(--muted); margin:10px 0 0}
 .mentor-alt .alt-why{color:#8b95a7}
 .mentor-sub{font-weight:700; font-size:13.5px; margin:12px 0 2px}

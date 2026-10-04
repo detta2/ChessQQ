@@ -49,7 +49,7 @@ function alasanSingkat(fen, r) {
 }
 
 /* Penjelasan lengkap langkah terbaik. r = {uci, san, kind, score, eval}. */
-function jelaskanLangkah(fen, r, turn) {
+function jelaskanLangkah(fen, r, turn, alt2) {
   const ap = applyUci(fen, r.uci);
   const baris = [];
   const sn = sideName(turn);
@@ -84,8 +84,39 @@ function jelaskanLangkah(fen, r, turn) {
     baris.push("Pion kuasai tengah — bagus buat serangan.");
 
   if (!baris.length) baris.push("Langkah aman yang bikin posisimu lebih enak.");
+
+  // seberapa jauh lebih bagus dari pilihan lain?
+  if (alt2 && r.kind === "cp" && alt2.kind === "cp") {
+    const gap = r.score - alt2.score;
+    if (gap >= 80)
+      baris.push(`Jauh lebih bagus dari ${alt2.san} (${fmtCpMover(r.score)} vs ${fmtCpMover(alt2.score)}) — ini langkahnya.`);
+    else if (gap <= 30)
+      baris.push(`${alt2.san} juga hampir sama kuat — pilih yang sesuai gayamu.`);
+  }
   if (r.kind !== "mate") baris.push(`Penilaian: ${fmtCpMover(r.score)} buat ${sn} (makin plus makin bagus).`);
   return baris;
+}
+
+/* Rencana 2 langkahmu berikutnya, diambil dari variasi (PV) engine. */
+function rencanaBerikut(fen, pvSans, turn) {
+  const out = [];
+  try {
+    const c = new Chess(fen);
+    const n = Math.min((pvSans || []).length, 7);
+    for (let i = 0; i < n; i++) {
+      const fenBefore = c.fen();
+      const mover = c.turn();
+      let mv = null;
+      try { mv = c.move(pvSans[i]); } catch (e) { break; }
+      if (!mv) break;
+      if (mover === turn && i > 0 && out.length < 2) {
+        const uci = mv.from + mv.to + (mv.promotion || "");
+        out.push({ san: mv.san, alasan: alasanSingkat(fenBefore, { uci, kind: "cp", score: 0 }) });
+      }
+      if (c.isGameOver()) break;
+    }
+  } catch (e) { /* abaikan */ }
+  return out;
 }
 
 /* Tips strategi. Kembalikan array string (maks 4, terurut prioritas). */
@@ -176,13 +207,15 @@ export function mentorFor(fen, results, turn) {
     return { selesai: true, judul: "Belum ada analisis", baris: ["Tekan tombol Analisis dulu, baru tanya Mentor."], strategi: [] };
 
   const terbaik = results[0];
+  const alt2 = results[1] || null;
   const alternatif = results.slice(1, 3).map((r) => ({ san: r.san, alasan: alasanSingkat(fen, r) }));
   return {
     selesai: false,
     judul: `Saran untuk ${sideName(turn)}`,
     langkah: terbaik.san,
     uci: terbaik.uci,
-    baris: jelaskanLangkah(fen, terbaik, turn),
+    baris: jelaskanLangkah(fen, terbaik, turn, alt2),
+    rencana: rencanaBerikut(fen, terbaik.pv, turn),
     alternatif,
     strategi: nilaiStrategi(fen, turn),
   };
