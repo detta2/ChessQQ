@@ -1,4 +1,4 @@
-/* Kalkulator Catur — UI papan, editor, panah prediksi, hasil analisis. */
+/* ChessQQ — UI papan, editor, panah prediksi, hasil analisis. */
 import { Chess, validateFen } from "./chess.js";
 
 const $ = (id) => document.getElementById(id);

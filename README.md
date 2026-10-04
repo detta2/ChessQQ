@@ -1,4 +1,4 @@
-# ♞ Kalkulator Catur
+# ♞ ChessQQ
 
 Web analisis catur: tempel posisi (FEN) atau susun manual → Stockfish 18 memprediksi
 3 langkah terbaik (musuh bakal jalan ke mana), ditampilkan sebagai panah di papan
