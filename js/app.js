@@ -378,16 +378,25 @@ function renderResults() {
   });
   renderMentor();
 }
-function hideResults() { $("results-card").hidden = true; $("mentor-card").hidden = true; lastResults = []; }
+function hideResults() { $("results-card").hidden = true; closeMentor(); lastResults = []; }
 
-/* ---------- mentor ---------- */
+/* ---------- mentor (tombol melayang + popup) ---------- */
+function openMentor() {
+  renderMentor();
+  $("mentor-modal").hidden = false;
+  document.body.style.overflow = "hidden";
+}
+function closeMentor() {
+  const md = $("mentor-modal");
+  if (md) md.hidden = true;
+  document.body.style.overflow = "";
+}
 function renderMentor() {
-  const card = $("mentor-card"), body = $("mentor-body");
+  const body = $("mentor-body");
   const turn = chess.turn();
   let m;
   try { m = mentorFor(chess.fen(), lastResults, turn); }
-  catch (e) { card.hidden = true; return; }
-  card.hidden = false;
+  catch (e) { body.innerHTML = "<p class='tip'>Mentor gagal membaca posisi.</p>"; return; }
   const esc = (s) => String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;");
   let html = `<p class="mentor-title">${esc(m.judul)}</p>`;
   if (m.selesai) {
@@ -400,7 +409,7 @@ function renderMentor() {
       html += `<p class="mentor-alt"><b>Pilihan lain:</b> ` +
         m.alternatif.map((a) => `${esc(a.san)} <span class="alt-why">(${esc(a.alasan)})</span>`).join(" · ") + `</p>`;
     if (m.strategi.length)
-      html += `<p class="mentor-sub">🧭 Strategi posisi ini:</p><ul class="mentor-list strat">` +
+      html += `<p class="mentor-sub">🧭 Tips buat posisimu:</p><ul class="mentor-list strat">` +
         m.strategi.map((s) => `<li>${esc(s)}</li>`).join("") + `</ul>`;
   }
   body.innerHTML = html;
@@ -414,6 +423,11 @@ function renderMentor() {
     } catch (e) { setStatus("Langkah mentor gagal dimainkan."); }
   });
 }
+$("mentor-fab").addEventListener("click", openMentor);
+$("mentor-close").addEventListener("click", closeMentor);
+$("mentor-modal").addEventListener("click", (e) => {
+  if (e.target.id === "mentor-modal") closeMentor();
+});
 function previewMove(i) {
   const m = lastResults[i];
   if (!m) return;

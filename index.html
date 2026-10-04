@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>♞ ChessQQ — Prediksi Langkah Musuh</title>
-<link rel="stylesheet" href="css/style.css?v=9">
+<link rel="stylesheet" href="css/style.css?v=10">
 </head>
 <body>
 <header class="topbar">
@@ -28,6 +28,7 @@
         <div id="squares"></div>
         <svg id="arrows" viewBox="0 0 800 800" preserveAspectRatio="none"></svg>
         <button id="preview-chip" hidden>← Kembali ke posisi</button>
+        <button id="mentor-fab" title="Tanya Mentor">🎓</button>
       </div>
     </div>
     <div class="board-meta">
@@ -65,13 +66,18 @@
     <ol id="moves"></ol>
   </section>
 
-  <section class="card mentor" id="mentor-card" hidden>
-    <h2>🎓 Mentor ChessQQ</h2>
-    <div id="mentor-body"></div>
-  </section>
-
   <footer>Engine Stockfish 18 · jalan 100% di HP kamu (WebAssembly) · tanpa server · gratis</footer>
 </main>
+
+<div id="mentor-modal" hidden>
+  <div class="mentor-sheet">
+    <div class="mentor-head">
+      <span>🎓 Mentor ChessQQ</span>
+      <button id="mentor-close" aria-label="Tutup">✕</button>
+    </div>
+    <div id="mentor-body"></div>
+  </div>
+</div>
 
 <div class="dock">
   <div class="dock-inner">
@@ -90,7 +96,7 @@
   <div class="dbg-head">DEBUG <span id="dbg-clock"></span></div>
   <pre id="dbg-log"></pre>
 </div>
-<script src="js/engine.js?v=9"></script>
-<script type="module" src="js/app.js?v=9"></script>
+<script src="js/engine.js?v=10"></script>
+<script type="module" src="js/app.js?v=10"></script>
 </body>
 </html>

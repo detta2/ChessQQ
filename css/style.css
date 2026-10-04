@@ -165,12 +165,35 @@ footer{max-width:560px; margin:4px auto 0; text-align:center; font-size:11.5px; 
   .brand-tx h1{font-size:21px}
 }
 
-/* ---------- mentor ---------- */
-.card.mentor{border:1px solid rgba(242,177,61,.35);
-  background:linear-gradient(180deg,rgba(242,177,61,.07),rgba(242,177,61,.02)),var(--surface);
-  animation:rise .35s cubic-bezier(.16,1,.3,1)}
+/* ---------- mentor: tombol melayang + popup ---------- */
+#mentor-fab{
+  position:absolute; right:10px; bottom:10px; z-index:6;
+  width:52px; height:52px; border-radius:50%; font-size:26px;
+  background:linear-gradient(145deg,var(--gold),var(--gold-deep)); color:var(--gold-ink);
+  box-shadow:0 6px 18px rgba(0,0,0,.45), 0 0 0 2px rgba(255,255,255,.25);
+  display:flex; align-items:center; justify-content:center;
+}
+#mentor-modal{
+  position:fixed; inset:0; z-index:100;
+  background:rgba(4,6,10,.62); backdrop-filter:blur(3px);
+  display:flex; align-items:flex-end; justify-content:center;
+}
+#mentor-modal[hidden]{display:none}
+.mentor-sheet{
+  width:100%; max-width:560px; max-height:78dvh; overflow-y:auto;
+  background:var(--surface2); border:1px solid rgba(242,177,61,.35); border-bottom:none;
+  border-radius:20px 20px 0 0; padding:14px 16px calc(18px + env(safe-area-inset-bottom));
+  animation:sheetUp .25s cubic-bezier(.16,1,.3,1);
+}
+@keyframes sheetUp{from{transform:translateY(40px); opacity:.4} to{transform:none; opacity:1}}
+.mentor-head{display:flex; align-items:center; justify-content:space-between;
+  font-weight:800; font-size:16px; color:var(--gold); margin-bottom:8px}
+#mentor-close{
+  width:32px; height:32px; border-radius:50%; font-size:14px; color:var(--muted);
+  background:rgba(255,255,255,.07);
+}
 .mentor-title{margin:2px 0 8px; font-weight:800; font-size:15px; color:var(--gold)}
-.mentor-rec{display:flex; align-items:center; gap:10px; margin:6px 0 10px}
+.mentor-rec{display:flex; align-items:center; gap:10px; margin:6px 0 10px; flex-wrap:wrap}
 .mentor-san{font-family:var(--mono); font-size:22px; font-weight:800; color:#7ee2a8;
   background:rgba(126,226,168,.1); border:1px solid rgba(126,226,168,.35);
   padding:4px 14px; border-radius:12px}
@@ -182,3 +205,7 @@ button.primary.small{padding:8px 14px; font-size:13px; border-radius:10px}
 .mentor-alt{font-size:13px; color:var(--muted); margin:10px 0 0}
 .mentor-alt .alt-why{color:#8b95a7}
 .mentor-sub{font-weight:700; font-size:13.5px; margin:12px 0 2px}
+@media (min-width:720px){
+  #mentor-modal{align-items:center; padding:20px}
+  .mentor-sheet{border-radius:20px; border-bottom:1px solid rgba(242,177,61,.35)}
+}

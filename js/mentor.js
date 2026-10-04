@@ -1,5 +1,5 @@
 /* ChessQQ Mentor — menjelaskan langkah terbaik + strategi posisi.
-   Bahasa Indonesia, untuk pemain yang lagi belajar. Vanilla ES module. */
+   Bahasa Indonesia SEDERHANA untuk pemula. Vanilla ES module. */
 import { Chess, SQUARES } from "./chess.js";
 
 const NAMA = { k: "Raja", q: "Menteri", r: "Benteng", b: "Gajah", n: "Kuda", p: "Pion" };
@@ -28,24 +28,24 @@ function applyUci(fen, uci) {
 }
 function fmtCpMover(cp) {
   const p = cp / 100;
-  return (p > 0 ? "+" : "") + p.toFixed(2);
+  return (p > 0 ? "+" : "") + p.toFixed(1).replace(".", ",");
 }
 
-/* Penjelasan 1 langkah (untuk alternatif): singkat, 2-5 kata. */
+/* Alasan 1 langkah, singkat. */
 function alasanSingkat(fen, r) {
   const ap = applyUci(fen, r.uci);
-  if (!ap) return "langkah engine";
+  if (!ap) return "pilihan engine";
   const mv = ap.move, after = ap.chess;
-  if (after.isCheckmate()) return "skakmat langsung!";
-  if (r.kind === "mate" && r.score > 0) return `paksa skakmat ${Math.abs(r.score)} langkah`;
-  if (after.inCheck()) return "skak";
+  if (after.isCheckmate()) return "langsung skakmat!";
+  if (r.kind === "mate" && r.score > 0) return `bisa skakmat ${Math.abs(r.score)} langkah`;
+  if (after.inCheck()) return "skak raja lawan";
   if (mv.captured) return `makan ${NAMA[mv.captured]}`;
-  if (mv.promotion) return `promosi ${PROMO[mv.promotion]}`;
-  if (mv.flags.includes("k") || mv.flags.includes("q")) return "rokade, amankan raja";
+  if (mv.promotion) return `pion jadi ${PROMO[mv.promotion]}`;
+  if (mv.flags.includes("k") || mv.flags.includes("q")) return "rokade, raja aman";
   if ((mv.piece === "n" || mv.piece === "b") && mv.from[1] === (mv.color === "w" ? "1" : "8"))
-    return "kembangkan perwira";
-  if (mv.piece === "p" && PUSAT.includes(mv.to)) return "rebut pusat";
-  return "perbaiki posisi";
+    return "majukan bidak";
+  if (mv.piece === "p" && PUSAT.includes(mv.to)) return "kuasai tengah";
+  return "bikin posisi enak";
 }
 
 /* Penjelasan lengkap langkah terbaik. r = {uci, san, kind, score, eval}. */
@@ -54,53 +54,50 @@ function jelaskanLangkah(fen, r, turn) {
   const baris = [];
   const sn = sideName(turn);
   if (!ap) {
-    baris.push("Engine merekomendasikan langkah ini.");
+    baris.push("Engine pilih langkah ini sebagai yang terbaik.");
     return baris;
   }
   const mv = ap.move, after = ap.chess;
 
   if (r.kind === "mate" && r.score > 0)
-    baris.push(`Skakmat dalam ${Math.abs(r.score)} langkah — lawan tidak bisa lolos.`);
+    baris.push(`Kamu bisa skakmat dalam ${Math.abs(r.score)} langkah!`);
   else if (r.kind === "mate" && r.score < 0)
-    baris.push(`Awas: jalur ini kalah skakmat ${Math.abs(r.score)} langkah — jangan mainkan!`);
-  if (after.isCheckmate()) baris.push("Itu skakmat langsung! 🏆");
-  else if (after.inCheck()) baris.push("Memberi skak — raja lawan wajib merespons, kamu dapat tempo gratis.");
+    baris.push(`Jangan main ini — malah kamu yang kena skakmat ${Math.abs(r.score)} langkah.`);
+  if (after.isCheckmate()) baris.push("Itu skakmat langsung! Kamu menang! 🏆");
+  else if (after.inCheck()) baris.push("Skak! Raja lawan harus kabur, kamu dapat giliran gratis.");
 
   if (mv.captured) {
     const untung = NILAI[mv.captured] >= NILAI[mv.piece];
     baris.push(
-      `Memakan ${NAMA[mv.captured]} lawan di ${mv.to}` +
-      (untung ? " — pertukaran menguntungkan buatmu." : ".")
+      `Makan ${NAMA[mv.captured]} lawan di ${mv.to}` +
+      (untung ? " — kamu untung!" : ".")
     );
-    // apakah bidak kita jadi sasaran empuk setelah makan?
     if (after.attackers(mv.to, lawan(turn)).length > 0 && NILAI[mv.piece] > NILAI[mv.captured])
-      baris.push("Tapi bidakmu bisa dimakan balik — pastikan sudah dihitung.");
+      baris.push("Hati-hati, bidakmu bisa dimakan balik.");
   }
-  if (mv.promotion) baris.push(`Pion promosi jadi ${PROMO[mv.promotion]} — bidak baru yang kuat!`);
+  if (mv.promotion) baris.push(`Pionmu berubah jadi ${PROMO[mv.promotion]}! Makin kuat.`);
   if (mv.flags.includes("k") || mv.flags.includes("q"))
-    baris.push("Rokade: raja pindah ke tempat aman sekaligus benteng ikut main.");
+    baris.push("Rokade! Raja sembunyi di tempat aman, benteng ikut bantu.");
   else if ((mv.piece === "n" || mv.piece === "b") && mv.from[1] === (mv.color === "w" ? "1" : "8"))
-    baris.push(`${NAMA[mv.piece]} keluar dari kandang — prinsip pembukaan: kembangkan perwira dulu.`);
+    baris.push(`${NAMA[mv.piece]} maju — bagus, bidakmu jadi aktif.`);
   if (mv.piece === "p" && PUSAT.includes(mv.to))
-    baris.push("Pion merebut petak pusat — fondasi serangan dan ruang gerak.");
-  if (mv.piece === "p" && mv.flags.includes("b"))
-    baris.push("Pion maju dua langkah, mengklaim ruang.");
+    baris.push("Pion kuasai tengah — bagus buat serangan.");
 
-  if (!baris.length) baris.push("Langkah posisi terbaik — memperbaiki kedudukan tanpa risiko langsung.");
-  if (r.kind !== "mate") baris.push(`Evaluasi engine: ${fmtCpMover(r.score)} untuk ${sn}.`);
+  if (!baris.length) baris.push("Langkah aman yang bikin posisimu lebih enak.");
+  if (r.kind !== "mate") baris.push(`Penilaian: ${fmtCpMover(r.score)} buat ${sn} (makin plus makin bagus).`);
   return baris;
 }
 
-/* Penilaian strategi posisi. Kembalikan array string (maks 4, terurut prioritas). */
+/* Tips strategi. Kembalikan array string (maks 4, terurut prioritas). */
 function nilaiStrategi(fen, turn) {
   const c = new Chess(fen);
   const tips = [];
-  const sn = sideName(turn), op = lawan(turn);
+  const op = lawan(turn);
 
   if (c.inCheck())
-    tips.push({ p: 0, t: `${sn} sedang diskak — wajib atasi skak dulu sebelum rencana lain.` });
+    tips.push({ p: 0, t: "Kamu lagi diskak! Selamatkan raja dulu." });
 
-  // bidak tak terjaga (bukan pion/raja)
+  // bidak yang bisa dimakan gratis (bukan pion/raja)
   const gantung = [];
   for (const sq of SQUARES) {
     const pc = c.get(sq);
@@ -110,10 +107,10 @@ function nilaiStrategi(fen, turn) {
   }
   if (gantung.length) {
     const g = gantung[0];
-    tips.push({ p: 1, t: `⚠️ ${NAMA[g.pc.type]} di ${g.sq} tidak terjaga — lawan bisa makan gratis!` });
+    tips.push({ p: 1, t: `⚠️ ${NAMA[g.pc.type]} di ${g.sq} nggak ada yang jaga — bisa dimakan gratis!` });
   }
 
-  // materi
+  // jumlah bidak
   let diff = 0;
   for (const sq of SQUARES) {
     const pc = c.get(sq);
@@ -121,11 +118,11 @@ function nilaiStrategi(fen, turn) {
   }
   const diffKu = turn === "w" ? diff : -diff;
   if (diffKu >= 150)
-    tips.push({ p: 2, t: `Unggul materi (+${(diffKu / 100).toFixed(1)}). Sederhanakan: tukar bidak, jangan tukar pion.` });
+    tips.push({ p: 2, t: `Bidakmu lebih banyak (+${(diffKu / 100).toFixed(0)}). Ajak tukar-tukaran bidak biar makin menang.` });
   else if (diffKu <= -150)
-    tips.push({ p: 2, t: `Kalah materi (${(diffKu / 100).toFixed(1)}). Hindari pertukaran — cari taktik dan serangan.` });
+    tips.push({ p: 2, t: `Bidakmu kalah (${(diffKu / 100).toFixed(0)}). Jangan tukar-tukaran — cari serangan.` });
 
-  // keamanan raja
+  // raja aman?
   let kingSq = null;
   for (const sq of SQUARES) {
     const pc = c.get(sq);
@@ -136,11 +133,11 @@ function nilaiStrategi(fen, turn) {
     const hak = c.fen().split(" ")[2];
     const punya = turn === "w" ? /[KQ]/.test(hak) : /[kq]/.test(hak);
     tips.push(punya
-      ? { p: 3, t: "Raja masih di tengah — rokade dulu sebelum menyerang." }
-      : { p: 3, t: "Raja di tengah tanpa hak rokade — jangan buka lajur pusat." });
+      ? { p: 3, t: "Raja masih di tengah — rokade biar aman." }
+      : { p: 3, t: "Raja di tengah dan nggak bisa rokade — jangan buka jalan ke raja." });
   }
 
-  // pengembangan (fase pembukaan)
+  // bidak belum gerak (awal permainan)
   const langkahKe = parseInt(c.fen().split(" ")[5], 10) || 1;
   if (langkahKe <= 12) {
     const kandang = turn === "w" ? "1" : "8";
@@ -150,16 +147,16 @@ function nilaiStrategi(fen, turn) {
       if (pc && pc.color === turn && (pc.type === "n" || pc.type === "b") && sq[1] === kandang) n++;
     }
     if (n > 0)
-      tips.push({ p: 4, t: `Masih ada ${n} perwira di kandang — kembangkan dulu, jangan gerakkan bidak yang sama dua kali.` });
+      tips.push({ p: 4, t: `Masih ada ${n} bidak belum gerak — keluarin dulu semuanya.` });
   }
 
-  // pusat
+  // tengah
   if (langkahKe <= 20) {
     const kuasai = PUSAT.some((sq) => {
       const pc = c.get(sq);
       return pc && pc.color === turn && pc.type === "p";
     });
-    if (!kuasai) tips.push({ p: 5, t: "Pusat belum direbut — dorong pion e/d ke tengah." });
+    if (!kuasai) tips.push({ p: 5, t: "Tengah masih kosong — dorong pion ke tengah." });
   }
 
   tips.sort((a, b) => a.p - b.p);
@@ -170,19 +167,19 @@ function nilaiStrategi(fen, turn) {
 export function mentorFor(fen, results, turn) {
   const c = new Chess(fen);
   if (c.isCheckmate()) {
-    const menang = lawan(turn);
-    return { selesai: true, judul: "Skakmat! 🏆", baris: [`${sideName(menang)} menang — permainan sudah selesai.`], strategi: [] };
+    const menang = sideName(lawan(turn));
+    return { selesai: true, judul: "Skakmat! 🏆", baris: [`${menang} menang — permainan sudah selesai.`], strategi: [] };
   }
   if (c.isStalemate() || c.isDraw())
-    return { selesai: true, judul: "Remis 🤝", baris: ["Permainan remis — tidak ada yang menang."], strategi: [] };
+    return { selesai: true, judul: "Remis 🤝", baris: ["Seri — tidak ada yang menang."], strategi: [] };
   if (!results || !results.length)
-    return { selesai: true, judul: "Belum ada analisis", baris: ["Tekan Analisis dulu."], strategi: [] };
+    return { selesai: true, judul: "Belum ada analisis", baris: ["Tekan tombol Analisis dulu, baru tanya Mentor."], strategi: [] };
 
   const terbaik = results[0];
   const alternatif = results.slice(1, 3).map((r) => ({ san: r.san, alasan: alasanSingkat(fen, r) }));
   return {
     selesai: false,
-    judul: `Rekomendasi untuk ${sideName(turn)}`,
+    judul: `Saran untuk ${sideName(turn)}`,
     langkah: terbaik.san,
     uci: terbaik.uci,
     baris: jelaskanLangkah(fen, terbaik, turn),
