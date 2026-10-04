@@ -67,6 +67,8 @@ main{max-width:560px; margin:0 auto; padding:14px 16px 150px}
   background:var(--surface); border:1px solid var(--line); border-radius:8px; padding:2px 0; white-space:nowrap}
 
 .board-meta{display:flex; align-items:center; justify-content:space-between; margin-top:10px}
+.meta-right{display:flex; gap:8px; align-items:center}
+select.mini{font-family:var(--font)}
 #turn-chip{font-size:13px; font-weight:700; background:var(--surface); border:1px solid var(--line);
   padding:7px 14px; border-radius:999px}
 .hint-line{margin:8px 2px 0; font-size:12.5px; color:var(--muted)}

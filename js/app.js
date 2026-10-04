@@ -14,6 +14,8 @@ let previewFen = null;
 let depth = 16;
 let lastResults = [];
 let lastDepth = 0;
+let autoSide = null; // 'w' | 'b' | null — warna yang dimainkan bot
+let autoToken = 0;   // dibatalkan tiap ada aksi baru (ganti mode / stop)
 const engine = new ChessEngine();
 
 /* ---------- papan ---------- */
@@ -120,6 +122,7 @@ function loadFenString(s) {
   chess.load(s);
   exitPreview(); syncFen(); renderBoard(); clearArrows();
   fenInput.classList.remove("bad");
+  maybeAutoPlay();
   return true;
 }
 fenInput.addEventListener("change", () => loadFenString(fenInput.value));
@@ -134,6 +137,7 @@ $("btn-paste").addEventListener("click", async () => {
 $("btn-start").addEventListener("click", () => {
   chess.reset(); exitPreview(); syncFen(); renderBoard(); clearArrows(); hideResults();
   setStatus("Posisi awal dimuat.");
+  maybeAutoPlay();
 });
 $("btn-clear").addEventListener("click", () => {
   chess.clear();
@@ -141,6 +145,7 @@ $("btn-clear").addEventListener("click", () => {
   chess.put({ type: "k", color: "b" }, "e8");
   exitPreview(); syncFen(); renderBoard(); clearArrows(); hideResults();
   setStatus("Papan dibersihkan (raja tetap). Nyalakan ✏️ Edit untuk susun.");
+  maybeAutoPlay();
 });
 $("btn-flip").addEventListener("click", () => {
   orientation = orientation === "w" ? "b" : "w";
@@ -208,6 +213,7 @@ function setTurnUI(t) {
   $("turn-w").classList.toggle("on", t === "w");
   $("turn-b").classList.toggle("on", t === "b");
   syncFen(); renderBoard();
+  maybeAutoPlay();
 }
 
 /* ---------- gerak bidak: ketuk-ketuk atau geser ---------- */
@@ -238,6 +244,7 @@ function tryMove(from, to) {
     if (!m) return false;
     exitPreview(); syncFen(); renderBoard(); clearArrows(); hideResults();
     setStatus("Langkah: " + m.san + " — tekan Analisis untuk prediksi baru.");
+    maybeAutoPlay();
     return true;
   } catch (e) { return false; }
 }
@@ -420,6 +427,7 @@ function renderMentor() {
       chess.move({ from: u.slice(0, 2), to: u.slice(2, 4), promotion: u.length > 4 ? u[4] : undefined });
       exitPreview(); syncFen(); renderBoard(); clearArrows(); hideResults();
       setStatus("Mentor memainkan " + m.langkah + " — tekan Analisis untuk lanjut.");
+      maybeAutoPlay();
     } catch (e) { setStatus("Langkah mentor gagal dimainkan."); }
   });
 }
@@ -458,6 +466,7 @@ $("depth-seg").addEventListener("click", (e) => {
 $("btn-analyze").addEventListener("click", async () => {
   if (engine.isBusy()) {
     engine.stop();
+    autoToken++; // batalkan juga langkah bot yang tertunda
     setStatus("Menghentikan…");
     setTimeout(() => {
       if (engine.isBusy()) {
@@ -490,6 +499,61 @@ $("btn-analyze").addEventListener("click", async () => {
     (lines, d) => onEngineUpdate(lines, d),
     () => { setAnalyzing(false); setStatus(`Selesai — depth ${lastDepth}.`); }
   );
+});
+/* ---------- bot otomatis ---------- */
+function maybeAutoPlay() {
+  if (!autoSide) return;
+  if (chess.turn() !== autoSide) return;
+  try {
+    if (new Chess(chess.fen()).isGameOver()) { setStatus("Permainan selesai."); return; }
+  } catch (e) { return; }
+  const myToken = ++autoToken;
+  const fen = chess.fen();
+  const d = Math.min(depth, 16); // bot pakai maks Normal biar nggak kelamaan mikir
+  const siapa = autoSide === "w" ? "Putih" : "Hitam";
+  setStatus(`🤖 Bot (${siapa}) lagi mikir…`);
+  setAnalyzing(true);
+  engine.load().then(() => {
+    if (myToken !== autoToken) { setAnalyzing(false); return; }
+    engine.analyze(fen, d,
+      (lines) => {
+        try {
+          const L = lines.filter(Boolean)[0];
+          if (L) setEvalBar(cpToWhitePov(L.kind, L.val, chess.turn()), L.kind);
+        } catch (e) { /* abaikan */ }
+      },
+      (bestUci) => {
+        setAnalyzing(false);
+        if (myToken !== autoToken || !autoSide) return;
+        if (chess.turn() !== autoSide || chess.fen() !== fen) return; // posisi sudah berubah
+        if (!bestUci || bestUci === "(none)") { setStatus("Bot tidak menemukan langkah."); return; }
+        try {
+          const mv = chess.move({
+            from: bestUci.slice(0, 2), to: bestUci.slice(2, 4),
+            promotion: bestUci.length > 4 ? bestUci[4] : undefined,
+          });
+          if (!mv) return;
+          exitPreview(); syncFen(); renderBoard(); clearArrows();
+          const sesudah = new Chess(chess.fen());
+          let akhir = "";
+          if (sesudah.isCheckmate()) akhir = " — SKAKMAT! 🏆";
+          else if (sesudah.isStalemate() || sesudah.isDraw()) akhir = " — remis.";
+          setStatus(`🤖 Bot (${siapa}) main: ${mv.san}${akhir} Giliranmu.`);
+        } catch (e) { setStatus("Bot gagal melangkah."); }
+      });
+  }).catch((e) => { setAnalyzing(false); setStatus("Engine gagal dimuat: " + e.message); });
+}
+$("auto-sel").addEventListener("change", (e) => {
+  const v = e.target.value;
+  autoSide = v === "off" ? null : v;
+  autoToken++; // batalkan bot yang lagi mikir
+  if (engine.isBusy()) engine.stop();
+  if (autoSide) {
+    setStatus(`🤖 Bot pegang ${autoSide === "w" ? "Putih" : "Hitam"}. Kamu main sisanya — perhatikan gerakannya buat belajar.`);
+    maybeAutoPlay();
+  } else {
+    setStatus("Auto mati — kamu yang main penuh.");
+  }
 });
 engine.onError((msg) => {
   setStatus("Gagal: " + msg + " Coba tekan Analisis lagi.");

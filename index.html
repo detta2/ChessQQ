@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>♞ ChessQQ — Prediksi Langkah Musuh</title>
-<link rel="stylesheet" href="css/style.css?v=10">
+<link rel="stylesheet" href="css/style.css?v=11">
 </head>
 <body>
 <header class="topbar">
@@ -33,7 +33,14 @@
     </div>
     <div class="board-meta">
       <span id="turn-chip">⚪ Putih jalan</span>
-      <button id="btn-flip" class="mini">⇄ Balik papan</button>
+      <div class="meta-right">
+        <select id="auto-sel" class="mini" title="Bot otomatis">
+          <option value="off">🤖 Mati</option>
+          <option value="w">🤖 Putih</option>
+          <option value="b">🤖 Hitam</option>
+        </select>
+        <button id="btn-flip" class="mini">⇄ Balik papan</button>
+      </div>
     </div>
     <p class="hint-line">Ketuk bidak lalu ketuk tujuan — atau geser langsung.</p>
   </section>
@@ -96,7 +103,7 @@
   <div class="dbg-head">DEBUG <span id="dbg-clock"></span></div>
   <pre id="dbg-log"></pre>
 </div>
-<script src="js/engine.js?v=10"></script>
-<script type="module" src="js/app.js?v=10"></script>
+<script src="js/engine.js?v=11"></script>
+<script type="module" src="js/app.js?v=11"></script>
 </body>
 </html>
