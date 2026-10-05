@@ -1,6 +1,6 @@
 /* ChessQQ — UI papan, editor, panah prediksi, hasil analisis, mentor. */
-import { Chess, validateFen } from "./chess.js?v=15";
-import { mentorFor, alasanSingkat } from "./mentor.js?v=15";
+import { Chess, validateFen } from "./chess.js?v=16";
+import { mentorFor, alasanSingkat } from "./mentor.js?v=16";
 
 const $ = (id) => document.getElementById(id);
 const esc = (s) => String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
@@ -37,6 +37,8 @@ function paintIcons(root) {
     if (ICONS[n] && !el.dataset.done) { el.innerHTML = ICONS[n]; el.dataset.done = "1"; }
   });
 }
+/* ikon untuk konten dinamis: langsung kebungkus + ukurannya ikut CSS */
+const ic = (n) => `<i data-ic="${n}" data-done="1">${ICONS[n]}</i>`;
 paintIcons();
 const squaresEl = $("squares"), arrowsEl = $("arrows"), fenInput = $("fen");
 const ARROW_COLORS = ["#22c55e", "#eab308", "#ef4444"];
@@ -356,7 +358,7 @@ function buildPalette() {
     pal.appendChild(b);
   });
   const x = document.createElement("button");
-  x.innerHTML = ICONS.eraser;
+  x.innerHTML = ic("eraser");
   x.title = "Penghapus";
   x.addEventListener("click", () => {
     paletteSel = "x";
@@ -369,8 +371,8 @@ $("btn-edit").addEventListener("click", () => {
   editMode = !editMode;
   $("editor").hidden = !editMode;
   $("btn-edit").innerHTML = editMode
-    ? ICONS.check + "<span>Selesai edit</span>"
-    : ICONS.pencil + "<span>Susun manual</span>";
+    ? ic("check") + "<span>Selesai edit</span>"
+    : ic("pencil") + "<span>Susun manual</span>";
   paletteSel = null;
 });
 function fixCastling() {
@@ -495,7 +497,7 @@ function startGhost(e, sq) {
 function setStatus(t) { $("engine-status").textContent = t; }
 function setAnalyzing(on) {
   const b = $("btn-analyze");
-  b.innerHTML = on ? ICONS.stop + "<span>Stop</span>" : ICONS.search + "<span>Analisis</span>";
+  b.innerHTML = on ? ic("stop") + "<span>Stop</span>" : ic("search") + "<span>Analisis</span>";
   b.classList.toggle("stop", on);
 }
 function cpToWhitePov(kind, val, turn) {
@@ -565,7 +567,7 @@ function renderResults() {
   const th = $("threat-line"), t0 = lastResults[0];
   if (t0) {
     th.hidden = false;
-    th.innerHTML = `${ICONS.warn} <span>Ancaman utama: <b>${esc(t0.san)}</b> — ${esc(alasanSingkat(fen, t0))}</span>`;
+    th.innerHTML = `${ic("warn")} <span>Ancaman utama: <b>${esc(t0.san)}</b> — ${esc(alasanSingkat(fen, t0))}</span>`;
   } else th.hidden = true;
   ol.innerHTML = "";
   lastResults.forEach((m, i) => {
@@ -576,7 +578,7 @@ function renderResults() {
       `<span class="eval ${String(m.eval).startsWith("-") ? "minus" : "plus"}">${m.eval}</span>`;
     const ask = document.createElement("button");
     ask.className = "mini ask";
-    ask.innerHTML = ICONS.chat;
+    ask.innerHTML = ic("chat");
     ask.title = "Tanya mentor soal langkah ini";
     ask.addEventListener("click", (e) => { e.stopPropagation(); openMentorFor(i); });
     li.appendChild(ask);
@@ -619,7 +621,7 @@ function renderMentor(results) {
     html += `<ul class="mentor-list">${m.baris.map((b) => `<li>${esc(b)}</li>`).join("")}</ul>`;
   } else {
     html += `<div class="mentor-rec"><span class="mentor-san">${esc(m.langkah)}</span>` +
-      `<button id="btn-mentor-play" class="primary small">${ICONS.play}<span>Mainkan</span></button></div>`;
+      `<button id="btn-mentor-play" class="primary small">${ic("play")}<span>Mainkan</span></button></div>`;
     html += `<p class="mentor-sub">💡 Kenapa langkah ini?</p>`;
     html += `<ul class="mentor-list">${m.baris.map((b) => `<li>${esc(b)}</li>`).join("")}</ul>`;
     if (m.rencana && m.rencana.length)
