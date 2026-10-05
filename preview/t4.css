@@ -1,0 +1,20 @@
+/* Opsi 4 — Hijau Klub: krem klasik, papan hijau felt */
+:root{
+  --bg:#f3efe2; --surface:#fffdf6; --surface2:#ece6d2;
+  --line:#dcd4ba;
+  --text:#20301f; --muted:#75816c;
+  --accent:#1e7a3c; --accent-ink:#ffffff;
+  --accent-grad:linear-gradient(145deg,#27a04e,#1e7a3c);
+  --sq-l:#eeeed2; --sq-d:#769656;
+  --topbar-bg:rgba(255,253,246,.92);
+  --dock-bg:rgba(255,253,246,.95);
+  --card-shadow:0 2px 14px rgba(32,48,31,.08);
+  --board-shadow:0 14px 34px rgba(32,48,31,.18), 0 0 0 1px #dcd4ba;
+  --fab-shadow:0 8px 20px rgba(30,122,60,.32);
+  --input-bg:#f6f2e6; --row-bg:#f6f2e6; --track-bg:#e4ddc4;
+  --eval-fill:linear-gradient(to top,#ffffff,#c3cfdb);
+  --eval-plus:#1e7a3c; --eval-minus:#c0392b;
+  --r-lg:18px; --r-md:14px;
+}
+.rank.r2{background:#dfe4d8; color:#3c4a38}
+#evallabel{color:var(--text)}

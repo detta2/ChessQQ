@@ -1,0 +1,138 @@
+<!doctype html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ChessQQ — Opsi UI</title>
+<link rel="stylesheet" href="base.css">
+<link rel="stylesheet" id="theme-css" href="t1.css">
+</head>
+<body>
+<div class="opt-badge" id="opt-badge">Opsi 1</div>
+<header class="topbar">
+  <div class="brand">
+    <span class="mark">♞</span>
+    <div class="brand-tx"><h1>ChessQQ</h1><span class="tag">Stockfish 18 · prediksi + mentor</span></div>
+  </div>
+</header>
+<main>
+  <section class="board-sec">
+    <div class="board-wrap">
+      <div class="evalbar"><div class="eval-track"><div id="evalfill"></div></div><span id="evallabel">+0.4</span></div>
+      <div id="board">
+        <div id="squares"></div>
+        <svg id="arrows" viewBox="0 0 800 800" preserveAspectRatio="none"></svg>
+        <button id="mentor-fab" title="Tanya Mentor">🎓</button>
+      </div>
+    </div>
+    <div class="board-meta">
+      <span id="turn-chip">⚪ Putih jalan</span>
+      <div class="meta-right">
+        <button class="mini">🤖 Mati</button>
+        <button class="mini">⇄ Balik papan</button>
+      </div>
+    </div>
+    <p class="hint-line">Ketuk bidak lalu ketuk tujuan — atau geser langsung.</p>
+  </section>
+
+  <section class="card">
+    <div class="fen-row">
+      <input id="fen" spellcheck="false" value="r1bqkb1r/1ppp1ppp/p1n2n2/4p3/B3P3/5N2/PPPP1PPP/RNBQK2R w KQkq - 0 5">
+      <button class="mini">📋</button>
+    </div>
+    <div class="btn-grid">
+      <button class="mini">♞ Posisi awal</button>
+      <button class="mini">🧹 Bersihkan</button>
+      <button class="mini">✏️ Susun manual</button>
+      <button class="mini">📥 Buka PGN</button>
+      <button class="mini">🌐 Game online</button>
+    </div>
+  </section>
+
+  <section class="card results">
+    <h2>🎯 Prediksi langkah musuh</h2>
+    <p class="tip">Giliran putih — ini 3 langkah terbaik menurut Stockfish. Ketuk langkah untuk pratinjau di papan, 💬 untuk tanya mentor.</p>
+    <p class="tip threat">⚠️ Ancaman utama: <b>O-O</b> — rokade, raja aman</p>
+    <ol id="moves">
+      <li><span class="rank r1">1</span><div class="mv-main"><div class="san">O-O</div><div class="pv">O-O Re8 d4 Bf8 Bb3</div></div><span class="eval plus">+0.45</span><button class="mini ask">💬</button></li>
+      <li><span class="rank r2">2</span><div class="mv-main"><div class="san">d4</div><div class="pv">d4 exd4 Nxd4 Nxd4 Qxd4</div></div><span class="eval plus">+0.38</span><button class="mini ask">💬</button></li>
+      <li><span class="rank r3">3</span><div class="mv-main"><div class="san">Bb3</div><div class="pv">Bb3 O-O d3 d6</div></div><span class="eval plus">+0.31</span><button class="mini ask">💬</button></li>
+    </ol>
+  </section>
+
+  <footer>Engine Stockfish 18 · jalan 100% di HP kamu (WebAssembly) · tanpa server · gratis</footer>
+</main>
+
+<div class="dock">
+  <div class="dock-inner">
+    <div class="seg-group"><button>Kilat</button><button class="on">Normal</button><button>Mendalam</button></div>
+    <button class="primary">🔍 Analisis</button>
+  </div>
+  <div class="engine-status">Engine siap · diunduh sekali (±7MB) saat pertama analisis</div>
+</div>
+
+<script>
+(function(){
+  var t = new URLSearchParams(location.search).get("t") || "1";
+  document.getElementById("theme-css").href = "t" + t + ".css";
+  var names = {"1":"Opsi 1 — Emas Klasik","2":"Opsi 2 — Terang Bersih","3":"Opsi 3 — Midnight Biru","4":"Opsi 4 — Hijau Klub"};
+  document.getElementById("opt-badge").textContent = names[t] || ("Opsi " + t);
+  // papan dari FEN
+  var FEN = "r1bqkb1r/1ppp1ppp/p1n2n2/4p3/B3P3/5N2/PPPP1PPP/RNBQK2R w KQkq - 0 5";
+  var placement = FEN.split(" ")[0];
+  var sq = document.getElementById("squares");
+  var cells = [];
+  for (var i = 0; i < 64; i++) {
+    var d = document.createElement("div");
+    var fx = i % 8, ry = Math.floor(i / 8);
+    d.className = "sq " + ((fx + ry) % 2 === 0 ? "l" : "d");
+    sq.appendChild(d); cells.push(d);
+  }
+  var NM = {k:"K",q:"Q",r:"R",b:"B",n:"N",p:"P"};
+  var i = 0;
+  for (var ch of placement) {
+    if (ch === "/") continue;
+    if (/\d/.test(ch)) { i += +ch; continue; }
+    var color = (ch === ch.toUpperCase()) ? "w" : "b";
+    var img = document.createElement("img");
+    img.src = "../img/pieces/" + color + NM[ch.toLowerCase()] + ".svg";
+    img.alt = "";
+    cells[i].appendChild(img);
+    i++;
+  }
+  // panah 3D persis gaya aplikasi asli
+  var ARROW_COLORS = ["#22c55e", "#eab308", "#ef4444"];
+  function sqCenter(sq) {
+    var f = sq.charCodeAt(0) - 97, r = +sq[1];
+    return [f * 100 + 50, (8 - r) * 100 + 50];
+  }
+  function drawArrow(from, to, color, w) {
+    var a = sqCenter(from), b = sqCenter(to);
+    var dx = b[0]-a[0], dy = b[1]-a[1], len = Math.hypot(dx,dy) || 1;
+    var ux = dx/len, uy = dy/len, nx = -uy, ny = ux;
+    var hw = w*1.4, headLen = Math.min(66, len*0.45);
+    var sx=a[0]+ux*16, sy=a[1]+uy*16, tx=b[0]-ux*26, ty=b[1]-uy*26;
+    var bx=tx-ux*headLen, by=ty-uy*headLen;
+    var d = "M"+(sx+nx*w/2)+","+(sy+ny*w/2)+"L"+(bx+nx*w/2)+","+(by+ny*w/2)+
+      "L"+(bx+nx*hw)+","+(by+ny*hw)+"L"+tx+","+ty+
+      "L"+(bx-nx*hw)+","+(by-ny*hw)+"L"+(bx-nx*w/2)+","+(by-ny*w/2)+
+      "L"+(sx-nx*w/2)+","+(sy-ny*w/2)+"Z";
+    var NS = "http://www.w3.org/2000/svg";
+    var svg = document.getElementById("arrows");
+    var g = document.createElementNS(NS,"g");
+    var sh = document.createElementNS(NS,"path");
+    sh.setAttribute("d",d); sh.setAttribute("fill","rgba(5,6,9,.6)");
+    sh.setAttribute("transform","translate(11,13)");
+    var p = document.createElementNS(NS,"path");
+    p.setAttribute("d",d); p.setAttribute("fill",color);
+    p.setAttribute("stroke","rgba(255,255,255,.35)"); p.setAttribute("stroke-width","3");
+    p.setAttribute("stroke-linejoin","round"); p.setAttribute("fill-opacity",".96");
+    g.appendChild(sh); g.appendChild(p); svg.appendChild(g);
+  }
+  drawArrow("e1","g1","#22c55e",30);
+  drawArrow("d2","d4","#eab308",26);
+  drawArrow("f1","e2","#ef4444",22);
+})();
+</script>
+</body>
+</html>

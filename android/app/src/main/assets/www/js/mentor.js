@@ -32,7 +32,7 @@ function fmtCpMover(cp) {
 }
 
 /* Alasan 1 langkah, singkat. */
-function alasanSingkat(fen, r) {
+export function alasanSingkat(fen, r) {
   const ap = applyUci(fen, r.uci);
   if (!ap) return "pilihan engine";
   const mv = ap.move, after = ap.chess;

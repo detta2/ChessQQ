@@ -4,12 +4,12 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>♞ ChessQQ — Prediksi Langkah Musuh</title>
-<link rel="stylesheet" href="css/style.css?v=14">
+<link rel="stylesheet" href="css/style.css?v=15">
 </head>
 <body>
 <header class="topbar">
   <div class="brand">
-    <span class="mark">♞</span>
+    <span class="mark"><img src="img/pieces/wN.svg" alt="ChessQQ"></span>
     <div class="brand-tx">
       <h1>ChessQQ</h1>
       <span class="tag">Stockfish 18 · prediksi + mentor</span>
@@ -27,19 +27,21 @@
       <div id="board">
         <div id="squares"></div>
         <svg id="arrows" viewBox="0 0 800 800" preserveAspectRatio="none"></svg>
-        <button id="preview-chip" hidden>← Kembali ke posisi</button>
-        <button id="mentor-fab" title="Tanya Mentor">🎓</button>
       </div>
     </div>
+    <div class="board-actions">
+      <button id="mentor-fab" class="mini"><i data-ic="cap"></i> Mentor</button>
+      <button id="preview-chip" class="mini" hidden><i data-ic="back"></i> Kembali ke posisi</button>
+    </div>
     <div class="board-meta">
-      <span id="turn-chip">⚪ Putih jalan</span>
+      <span id="turn-chip"><span class="dot w"></span>Putih jalan</span>
       <div class="meta-right">
         <select id="auto-sel" class="mini" title="Bot otomatis">
-          <option value="off">🤖 Mati</option>
-          <option value="w">🤖 Putih</option>
-          <option value="b">🤖 Hitam</option>
+          <option value="off">Auto: Mati</option>
+          <option value="w">Auto: Putih</option>
+          <option value="b">Auto: Hitam</option>
         </select>
-        <button id="btn-flip" class="mini">⇄ Balik papan</button>
+        <button id="btn-flip" class="mini"><i data-ic="swap"></i> Balik papan</button>
       </div>
     </div>
     <p class="hint-line">Ketuk bidak lalu ketuk tujuan — atau geser langsung.</p>
@@ -49,21 +51,21 @@
     <div class="fen-row">
       <input id="fen" spellcheck="false" autocomplete="off"
         placeholder="rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1">
-      <button id="btn-paste" class="mini" title="Tempel dari clipboard">📋</button>
+      <button id="btn-paste" class="mini" title="Tempel dari clipboard"><i data-ic="clipboard"></i></button>
     </div>
     <div class="btn-grid">
-      <button id="btn-start" class="mini">♞ Posisi awal</button>
-      <button id="btn-clear" class="mini">🧹 Bersihkan</button>
-      <button id="btn-edit" class="mini">✏️ Susun manual</button>
-      <button id="btn-pgn" class="mini">📥 Buka PGN</button>
-      <button id="btn-online" class="mini">🌐 Game online</button>
+      <button id="btn-start" class="mini"><i data-ic="reset"></i> Posisi awal</button>
+      <button id="btn-clear" class="mini"><i data-ic="trash"></i> Bersihkan</button>
+      <button id="btn-edit" class="mini"><i data-ic="pencil"></i> Susun manual</button>
+      <button id="btn-pgn" class="mini"><i data-ic="download"></i> Buka PGN</button>
+      <button id="btn-online" class="mini"><i data-ic="globe"></i> Game online</button>
     </div>
     <div id="pgn-panel" hidden>
       <textarea id="pgn-text" rows="4" spellcheck="false"
         placeholder="Tempel teks PGN di sini…&#10;&#10;Contoh:&#10;1. e4 e5 2. Nf3 Nc6 3. Bb5 a6 *"></textarea>
       <div class="row">
-        <button id="btn-pgn-open" class="mini">▶ Buka game</button>
-        <button id="btn-pgn-close" class="mini">Tutup</button>
+        <button id="btn-pgn-open" class="mini"><i data-ic="play"></i> Buka game</button>
+        <button id="btn-pgn-close" class="mini"><i data-ic="x"></i> Tutup</button>
       </div>
     </div>
     <div id="online-panel" hidden>
@@ -73,33 +75,33 @@
           <option value="chesscom">chess.com</option>
           <option value="lichess">lichess</option>
         </select>
-        <button id="btn-online-go" class="mini" title="Cari game">🔎</button>
+        <button id="btn-online-go" class="mini" title="Cari game"><i data-ic="search"></i></button>
       </div>
       <div id="online-list"></div>
-      <div class="row"><button id="btn-online-close" class="mini">Tutup</button></div>
+      <div class="row"><button id="btn-online-close" class="mini"><i data-ic="x"></i> Tutup</button></div>
     </div>
     <div id="pgn-nav" hidden>
-      <button id="pgn-first" class="mini" title="Awal game">⏮</button>
-      <button id="pgn-prev" class="mini" title="Langkah sebelumnya">◀</button>
+      <button id="pgn-first" class="mini" title="Awal game"><i data-ic="skip-back"></i></button>
+      <button id="pgn-prev" class="mini" title="Langkah sebelumnya"><i data-ic="chev-left"></i></button>
       <span id="pgn-label"></span>
-      <button id="pgn-next" class="mini" title="Langkah berikut">▶</button>
-      <button id="pgn-last" class="mini" title="Akhir game">⏭</button>
-      <button id="pgn-exit" class="mini" title="Tutup PGN">✕</button>
+      <button id="pgn-next" class="mini" title="Langkah berikut"><i data-ic="chev-right"></i></button>
+      <button id="pgn-last" class="mini" title="Akhir game"><i data-ic="skip-fwd"></i></button>
+      <button id="pgn-exit" class="mini" title="Tutup PGN"><i data-ic="x"></i></button>
     </div>
     <div id="pgn-moves" hidden></div>
     <div id="editor" hidden>
       <div id="palette"></div>
       <div class="row">
         <span class="lbl">Giliran:</span>
-        <button id="turn-w" class="seg on">⚪ Putih</button>
-        <button id="turn-b" class="seg">⚫ Hitam</button>
+        <button id="turn-w" class="seg on"><span class="dot w"></span> Putih</button>
+        <button id="turn-b" class="seg"><span class="dot b"></span> Hitam</button>
       </div>
-      <p class="tip">Ketuk bidak di atas, lalu ketuk kotak di papan. Ketuk 🧽 lalu kotak untuk menghapus.</p>
+      <p class="tip">Ketuk bidak di atas, lalu ketuk kotak di papan. Pilih penghapus lalu ketuk kotak untuk menghapus.</p>
     </div>
   </section>
 
   <section class="card results" id="results-card" hidden>
-    <h2>🎯 Prediksi langkah musuh</h2>
+    <h2><i data-ic="target"></i> Prediksi langkah musuh</h2>
     <p class="tip" id="predict-note"></p>
     <p class="tip threat" id="threat-line" hidden></p>
     <ol id="moves"></ol>
@@ -111,8 +113,8 @@
 <div id="mentor-modal" hidden>
   <div class="mentor-sheet">
     <div class="mentor-head">
-      <span>🎓 Mentor ChessQQ</span>
-      <button id="mentor-close" aria-label="Tutup">✕</button>
+      <span><i data-ic="cap"></i> Mentor ChessQQ</span>
+      <button id="mentor-close" aria-label="Tutup"><i data-ic="x"></i></button>
     </div>
     <div id="mentor-body"></div>
   </div>
@@ -125,7 +127,7 @@
       <button data-d="16" class="on">Normal</button>
       <button data-d="22">Mendalam</button>
     </div>
-    <button id="btn-analyze" class="primary">🔍 Analisis</button>
+    <button id="btn-analyze" class="primary"><i data-ic="search"></i> Analisis</button>
   </div>
   <div id="engine-status">Engine siap · diunduh sekali (±7MB) saat pertama analisis</div>
   <div class="progress" id="progress" hidden><div id="progress-fill"></div></div>
@@ -135,8 +137,8 @@
   <div class="dbg-head">DEBUG <span id="dbg-clock"></span></div>
   <pre id="dbg-log"></pre>
 </div>
-<script src="js/engine.js?v=14"></script>
-<script type="module" src="js/app.js?v=14"></script>
+<script src="js/engine.js?v=15"></script>
+<script type="module" src="js/app.js?v=15"></script>
 <script>
 /* Service worker: cache engine + app biar load berikutnya instan & offline-ready. */
 if ("serviceWorker" in navigator) {

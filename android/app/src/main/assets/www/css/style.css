@@ -125,10 +125,12 @@ select.mini{font-family:var(--font)}
 .card.results{animation:rise .35s cubic-bezier(.16,1,.3,1)}
 @keyframes rise{from{opacity:0; transform:translateY(10px)} to{opacity:1; transform:none}}
 #moves{list-style:none; margin:10px 0 0; padding:0; display:flex; flex-direction:column; gap:8px}
-#moves li{display:grid; grid-template-columns:40px 1fr auto; gap:10px; align-items:center;
+#moves li{display:grid; grid-template-columns:40px 1fr auto auto; gap:10px; align-items:center;
   background:#0d1117; border:1px solid var(--line); border-radius:var(--r-md);
   padding:10px 12px; cursor:pointer}
 #moves li:active{transform:scale(.98)}
+.mini.ask{padding:8px 10px; font-size:15px; line-height:1}
+.tip.threat{color:var(--gold); font-weight:600}
 .rank{width:34px; height:34px; border-radius:50%; display:flex; align-items:center; justify-content:center;
   font-weight:800; font-size:15px; font-family:var(--mono)}
 .rank.r1{background:var(--gold); color:var(--gold-ink)}
@@ -212,3 +214,31 @@ button.primary.small{padding:8px 14px; font-size:13px; border-radius:10px}
   #mentor-modal{align-items:center; padding:20px}
   .mentor-sheet{border-radius:20px; border-bottom:1px solid rgba(242,177,61,.35)}
 }
+
+/* ---------- PGN & game online ---------- */
+#pgn-panel, #online-panel{margin-top:10px}
+#pgn-text{width:100%; min-height:96px; background:#0d1117; border:1px solid var(--line);
+  color:var(--text); border-radius:var(--r-md); padding:10px 12px; font-size:12px;
+  font-family:var(--mono); resize:vertical}
+#pgn-text:focus{outline:none; border-color:var(--gold)}
+#online-user{flex:1; min-width:0; background:#0d1117; border:1px solid var(--line);
+  color:var(--text); border-radius:var(--r-md); padding:10px 12px; font-size:13px}
+#online-user:focus{outline:none; border-color:var(--gold)}
+#online-list{display:flex; flex-direction:column; gap:8px; margin-top:10px;
+  max-height:260px; overflow-y:auto}
+.online-game{display:flex; flex-direction:column; gap:2px; align-items:flex-start; text-align:left;
+  background:#0d1117; border:1px solid var(--line); border-radius:var(--r-md);
+  padding:10px 12px; width:100%}
+.online-game b{font-size:13.5px}
+.online-game .vs{color:var(--muted); font-weight:400}
+.online-game span{font-size:12px; color:var(--muted)}
+#pgn-nav{display:flex; gap:6px; align-items:center; margin-top:10px}
+#pgn-nav .mini{padding:9px 10px}
+#pgn-label{flex:1; min-width:0; text-align:center; font-size:12.5px; color:var(--muted);
+  font-weight:600; white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
+#pgn-moves{display:flex; flex-wrap:wrap; gap:4px; align-items:center; margin-top:8px;
+  max-height:110px; overflow-y:auto; background:#0d1117; border:1px solid var(--line);
+  border-radius:var(--r-md); padding:8px 10px; font-size:12.5px}
+.pgn-no{color:#5b6577; font-family:var(--mono); margin-left:4px}
+.pgn-mv{font-family:var(--mono); padding:3px 7px; border-radius:7px; color:var(--text)}
+.pgn-mv.on{background:var(--gold); color:var(--gold-ink); font-weight:700}

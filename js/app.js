@@ -1,9 +1,43 @@
 /* ChessQQ — UI papan, editor, panah prediksi, hasil analisis, mentor. */
-import { Chess, validateFen } from "./chess.js?v=14";
-import { mentorFor, alasanSingkat } from "./mentor.js?v=14";
+import { Chess, validateFen } from "./chess.js?v=15";
+import { mentorFor, alasanSingkat } from "./mentor.js?v=15";
 
 const $ = (id) => document.getElementById(id);
 const esc = (s) => String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+
+/* ---------- ikon SVG (pengganti emoji, satu sumber) ---------- */
+const _ic = (inner) => `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${inner}</svg>`;
+const ICONS = {
+  search: _ic('<circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/>'),
+  pencil: _ic('<path d="M17 3a2.8 2.8 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5z"/>'),
+  trash: _ic('<path d="M3 6h18"/><path d="M8 6V4a1 1 0 0 1 1-1h6a1 1 0 0 1 1 1v2"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/>'),
+  download: _ic('<path d="M12 3v11"/><path d="M7 10l5 5 5-5"/><path d="M4 20h16"/>'),
+  globe: _ic('<circle cx="12" cy="12" r="9"/><path d="M3 12h18"/><path d="M12 3c2.5 2.6 3.9 5.7 3.9 9s-1.4 6.4-3.9 9c-2.5-2.6-3.9-5.7-3.9-9S9.5 5.6 12 3z"/>'),
+  chat: _ic('<path d="M21 11.5a8.5 8.5 0 0 1-8.5 8.5c-1.5 0-3-.4-4.2-1L3 20l1-5.3A8.5 8.5 0 1 1 21 11.5z"/>'),
+  play: '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M7 4l13 8-13 8z"/></svg>',
+  stop: '<svg viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="6" width="12" height="12" rx="2"/></svg>',
+  x: _ic('<path d="M6 6l12 12M18 6L6 18"/>'),
+  check: _ic('<path d="M4 12l5 5L20 7"/>'),
+  "chev-left": _ic('<path d="M15 6l-6 6 6 6"/>'),
+  "chev-right": _ic('<path d="M9 6l6 6-6 6"/>'),
+  "skip-back": _ic('<path d="M6 5v14"/><path d="M18 5l-9 7 9 7"/>'),
+  "skip-fwd": _ic('<path d="M18 5v14"/><path d="M6 5l9 7-9 7"/>'),
+  clipboard: _ic('<rect x="5" y="4" width="14" height="17" rx="2"/><rect x="9" y="2" width="6" height="4" rx="1"/><path d="M9 11h6M9 15h4"/>'),
+  swap: _ic('<path d="M7 4L3 8l4 4"/><path d="M3 8h13"/><path d="M17 12l4 4-4 4"/><path d="M21 16H8"/>'),
+  reset: _ic('<path d="M3 12a9 9 0 1 0 3-6.7"/><path d="M3 4v5h5"/>'),
+  cap: _ic('<path d="M12 4L2 9l10 5 10-5z"/><path d="M6 11.5V16c0 1.7 2.7 3 6 3s6-1.3 6-3v-4.5"/><path d="M22 9v5"/>'),
+  eraser: _ic('<path d="m7 21-4.3-4.3c-1-1-1-2.5 0-3.4l9.6-9.6c1-1 2.5-1 3.4 0l5.6 5.6c1 1 1 2.5 0 3.4L13 21"/><path d="M22 21H7"/><path d="m5 11 9 9"/>'),
+  back: _ic('<path d="M19 12H5"/><path d="M11 6l-6 6 6 6"/>'),
+  warn: _ic('<path d="M12 3L2 21h20z"/><path d="M12 10v5"/><path d="M12 18.5v.5"/>'),
+  target: _ic('<circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="5"/><circle cx="12" cy="12" r="1" fill="currentColor"/>'),
+};
+function paintIcons(root) {
+  (root || document).querySelectorAll("[data-ic]").forEach((el) => {
+    const n = el.getAttribute("data-ic");
+    if (ICONS[n] && !el.dataset.done) { el.innerHTML = ICONS[n]; el.dataset.done = "1"; }
+  });
+}
+paintIcons();
 const squaresEl = $("squares"), arrowsEl = $("arrows"), fenInput = $("fen");
 const ARROW_COLORS = ["#22c55e", "#eab308", "#ef4444"];
 
@@ -61,7 +95,9 @@ function renderBoard(fen) {
     }
   }
   const t = new Chess(fen).turn();
-  $("turn-chip").textContent = t === "w" ? "⚪ Putih jalan" : "⚫ Hitam jalan";
+  $("turn-chip").innerHTML = t === "w"
+    ? '<span class="dot w"></span>Putih jalan'
+    : '<span class="dot b"></span>Hitam jalan';
   paintSelection();
 }
 
@@ -320,7 +356,8 @@ function buildPalette() {
     pal.appendChild(b);
   });
   const x = document.createElement("button");
-  x.textContent = "🧽"; x.style.fontSize = "26px";
+  x.innerHTML = ICONS.eraser;
+  x.title = "Penghapus";
   x.addEventListener("click", () => {
     paletteSel = "x";
     [...pal.children].forEach((el) => el.classList.remove("on"));
@@ -331,7 +368,9 @@ function buildPalette() {
 $("btn-edit").addEventListener("click", () => {
   editMode = !editMode;
   $("editor").hidden = !editMode;
-  $("btn-edit").textContent = editMode ? "✔️ Selesai edit" : "✏️ Edit posisi";
+  $("btn-edit").innerHTML = editMode
+    ? ICONS.check + "<span>Selesai edit</span>"
+    : ICONS.pencil + "<span>Susun manual</span>";
   paletteSel = null;
 });
 function fixCastling() {
@@ -456,7 +495,7 @@ function startGhost(e, sq) {
 function setStatus(t) { $("engine-status").textContent = t; }
 function setAnalyzing(on) {
   const b = $("btn-analyze");
-  b.textContent = on ? "⏹ Stop" : "🔍 Analisis";
+  b.innerHTML = on ? ICONS.stop + "<span>Stop</span>" : ICONS.search + "<span>Analisis</span>";
   b.classList.toggle("stop", on);
 }
 function cpToWhitePov(kind, val, turn) {
@@ -526,7 +565,7 @@ function renderResults() {
   const th = $("threat-line"), t0 = lastResults[0];
   if (t0) {
     th.hidden = false;
-    th.innerHTML = `⚠️ Ancaman utama: <b>${esc(t0.san)}</b> — ${esc(alasanSingkat(fen, t0))}`;
+    th.innerHTML = `${ICONS.warn} <span>Ancaman utama: <b>${esc(t0.san)}</b> — ${esc(alasanSingkat(fen, t0))}</span>`;
   } else th.hidden = true;
   ol.innerHTML = "";
   lastResults.forEach((m, i) => {
@@ -537,7 +576,7 @@ function renderResults() {
       `<span class="eval ${String(m.eval).startsWith("-") ? "minus" : "plus"}">${m.eval}</span>`;
     const ask = document.createElement("button");
     ask.className = "mini ask";
-    ask.textContent = "💬";
+    ask.innerHTML = ICONS.chat;
     ask.title = "Tanya mentor soal langkah ini";
     ask.addEventListener("click", (e) => { e.stopPropagation(); openMentorFor(i); });
     li.appendChild(ask);
@@ -580,7 +619,7 @@ function renderMentor(results) {
     html += `<ul class="mentor-list">${m.baris.map((b) => `<li>${esc(b)}</li>`).join("")}</ul>`;
   } else {
     html += `<div class="mentor-rec"><span class="mentor-san">${esc(m.langkah)}</span>` +
-      `<button id="btn-mentor-play" class="primary small">▶️ Mainkan</button></div>`;
+      `<button id="btn-mentor-play" class="primary small">${ICONS.play}<span>Mainkan</span></button></div>`;
     html += `<p class="mentor-sub">💡 Kenapa langkah ini?</p>`;
     html += `<ul class="mentor-list">${m.baris.map((b) => `<li>${esc(b)}</li>`).join("")}</ul>`;
     if (m.rencana && m.rencana.length)

@@ -1,0 +1,20 @@
+/* Opsi 2 — Terang Bersih: light, kertas hangat, aksen biru */
+:root{
+  --bg:#f4f2ec; --surface:#ffffff; --surface2:#eef1f6;
+  --line:#e2ded2;
+  --text:#17202b; --muted:#6b7686;
+  --accent:#1d6fe0; --accent-ink:#ffffff;
+  --accent-grad:linear-gradient(145deg,#2f86f0,#1d6fe0);
+  --sq-l:#f0d9b5; --sq-d:#b58863;
+  --topbar-bg:rgba(255,255,255,.9);
+  --dock-bg:rgba(255,255,255,.94);
+  --card-shadow:0 2px 14px rgba(23,32,43,.07);
+  --board-shadow:0 14px 34px rgba(23,32,43,.16), 0 0 0 1px #e2ded2;
+  --fab-shadow:0 8px 20px rgba(29,111,224,.3);
+  --input-bg:#f7f5ef; --row-bg:#f7f5ef; --track-bg:#e8e4d8;
+  --eval-fill:linear-gradient(to top,#ffffff,#b9c6d6);
+  --eval-plus:#15803d; --eval-minus:#dc2626;
+  --r-lg:18px; --r-md:14px;
+}
+.rank.r2{background:#dbe2ec; color:#33415c}
+#evallabel{color:var(--text)}
