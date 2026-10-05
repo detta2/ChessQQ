@@ -212,6 +212,28 @@ button.primary.small{padding:8px 14px; font-size:13px; border-radius:10px}
   .mentor-sheet{border-radius:20px; border-bottom:1px solid rgba(242,177,61,.35)}
 }
 
+/* ---------- pelatih langkah ---------- */
+#coach-card[hidden]{display:none}
+.coach-head{display:flex; align-items:center; gap:8px; margin-bottom:8px}
+.coach-title{font-weight:800; font-size:14px; display:inline-flex; align-items:center; gap:6px; flex:1}
+.coach-title [data-ic] svg{width:18px; height:18px; color:var(--gold)}
+#coach-close{padding:6px 8px}
+#coach-close [data-ic] svg{width:14px; height:14px}
+.coach-badge{font-size:12px; font-weight:800; padding:4px 12px; border-radius:999px; color:#fff; background:#75816c}
+.coach-badge.best{background:#1e7a3c}
+.coach-badge.good{background:#2f86f0}
+.coach-badge.ok{background:#b98a1d}
+.coach-badge.bad{background:#d06a1f}
+.coach-badge.blunder{background:#c0392b}
+.coach-badge.thinking{background:#75816c; animation:pulse 1.2s ease-in-out infinite}
+@keyframes pulse{50%{opacity:.55}}
+#coach-body{font-size:13.5px}
+#coach-body .coach-eval{font-family:var(--mono); font-size:12px; color:var(--muted); margin-top:6px}
+#coach-body .coach-row{display:flex; gap:8px; align-items:center; margin-top:10px}
+#coach-body .coach-row .mini{flex:1}
+#coach-toggle.on{border-color:var(--gold); color:var(--gold)}
+#coach-toggle:not(.on){opacity:.55}
+
 /* ---------- PGN & game online ---------- */
 #pgn-panel, #online-panel{margin-top:10px}
 #pgn-text{width:100%; min-height:96px; background:#f6f2e4; border:1px solid var(--line);

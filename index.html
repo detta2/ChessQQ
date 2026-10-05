@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>♞ ChessQQ — Prediksi Langkah Musuh</title>
-<link rel="stylesheet" href="css/style.css?v=19">
+<link rel="stylesheet" href="css/style.css?v=20">
 </head>
 <body>
 <header class="topbar">
@@ -47,6 +47,15 @@
     <p class="hint-line">Ketuk bidak lalu ketuk tujuan — atau geser langsung.</p>
   </section>
 
+  <section class="card" id="coach-card" hidden>
+    <div class="coach-head">
+      <span class="coach-badge" id="coach-badge">Pelatih</span>
+      <span class="coach-title"><i data-ic="cap"></i> Pelatih langkah</span>
+      <button id="coach-close" class="mini" aria-label="Tutup"><i data-ic="x"></i></button>
+    </div>
+    <div id="coach-body"></div>
+  </section>
+
   <section class="card">
     <div class="btn-grid">
       <button id="btn-start" class="mini"><i data-ic="reset"></i> Posisi awal</button>
@@ -54,6 +63,7 @@
       <button id="btn-edit" class="mini"><i data-ic="pencil"></i> Susun manual</button>
       <button id="btn-pgn" class="mini"><i data-ic="download"></i> Buka PGN</button>
       <button id="btn-online" class="mini"><i data-ic="globe"></i> Game online</button>
+      <button id="coach-toggle" class="mini on"><i data-ic="cap"></i> Pelatih</button>
     </div>
     <div class="fen-row fen-below">
       <input id="fen" spellcheck="false" autocomplete="off"
@@ -137,8 +147,8 @@
   <div class="dbg-head">DEBUG <span id="dbg-clock"></span></div>
   <pre id="dbg-log"></pre>
 </div>
-<script src="js/engine.js?v=19"></script>
-<script type="module" src="js/app.js?v=19"></script>
+<script src="js/engine.js?v=20"></script>
+<script type="module" src="js/app.js?v=20"></script>
 <script>
 /* Service worker: cache engine + app biar load berikutnya instan & offline-ready. */
 if ("serviceWorker" in navigator) {
