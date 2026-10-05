@@ -85,7 +85,6 @@ select.mini{font-family:var(--font)}
 .lbl{font-size:13px; color:var(--muted); font-weight:600}
 
 .fen-row{display:flex; gap:8px}
-.fen-row.fen-bottom{margin-top:10px}
 #fen{flex:1; min-width:0; background:#f6f2e4; border:1px solid var(--line); color:var(--text);
   border-radius:var(--r-md); padding:11px 12px; font-size:12px}
 #fen:focus{outline:none; border-color:var(--gold)}
@@ -229,7 +228,7 @@ button.primary.small{padding:8px 14px; font-size:13px; border-radius:10px}
 .online-game b{font-size:13.5px}
 .online-game .vs{color:var(--muted); font-weight:400}
 .online-game span{font-size:12px; color:var(--muted)}
-#pgn-nav{display:flex; gap:6px; align-items:center}
+#pgn-nav{display:flex; gap:6px; align-items:center; margin-top:10px}
 #pgn-nav .mini{padding:9px 10px}
 #pgn-label{flex:1; min-width:0; text-align:center; font-size:12.5px; color:var(--muted);
   font-weight:600; white-space:nowrap; overflow:hidden; text-overflow:ellipsis}

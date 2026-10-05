@@ -1,6 +1,6 @@
 /* ChessQQ service worker — simpan engine + app di HP biar load instan & bisa offline.
    Tiap release: naikkan CACHE (samakan dengan ?v= di index.html). */
-const CACHE = "chessqq-v17";
+const CACHE = "chessqq-v18";
 const PIECES = ["wK", "wQ", "wR", "wB", "wN", "wP", "bK", "bQ", "bR", "bB", "bN", "bP"];
 const CORE = [
   "./",
