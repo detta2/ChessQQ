@@ -85,6 +85,7 @@ select.mini{font-family:var(--font)}
 .lbl{font-size:13px; color:var(--muted); font-weight:600}
 
 .fen-row{display:flex; gap:8px}
+.fen-row.fen-below{margin-top:10px}
 #fen{flex:1; min-width:0; background:#f6f2e4; border:1px solid var(--line); color:var(--text);
   border-radius:var(--r-md); padding:11px 12px; font-size:12px}
 #fen:focus{outline:none; border-color:var(--gold)}
@@ -94,7 +95,7 @@ select.mini{font-family:var(--font)}
 .mini{background:var(--surface2); border:1px solid var(--line); color:var(--text);
   border-radius:var(--r-md); padding:10px 12px; font-size:13px; font-weight:600}
 .mini.on{border-color:var(--gold); color:var(--gold)}
-.btn-grid{display:grid; grid-template-columns:1fr 1fr 1fr; gap:8px; margin-top:10px}
+.btn-grid{display:grid; grid-template-columns:1fr 1fr 1fr; gap:8px}
 .btn-grid .mini{padding:11px 6px}
 
 #palette{display:grid; grid-template-columns:repeat(7,1fr); gap:6px; margin:10px 0}

@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>♞ ChessQQ — Prediksi Langkah Musuh</title>
-<link rel="stylesheet" href="css/style.css?v=18">
+<link rel="stylesheet" href="css/style.css?v=19">
 </head>
 <body>
 <header class="topbar">
@@ -48,7 +48,14 @@
   </section>
 
   <section class="card">
-    <div class="fen-row">
+    <div class="btn-grid">
+      <button id="btn-start" class="mini"><i data-ic="reset"></i> Posisi awal</button>
+      <button id="btn-clear" class="mini"><i data-ic="trash"></i> Bersihkan</button>
+      <button id="btn-edit" class="mini"><i data-ic="pencil"></i> Susun manual</button>
+      <button id="btn-pgn" class="mini"><i data-ic="download"></i> Buka PGN</button>
+      <button id="btn-online" class="mini"><i data-ic="globe"></i> Game online</button>
+    </div>
+    <div class="fen-row fen-below">
       <input id="fen" spellcheck="false" autocomplete="off"
         placeholder="rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1">
       <button id="btn-paste" class="mini" title="Tempel dari clipboard"><i data-ic="clipboard"></i></button>
@@ -62,13 +69,6 @@
       <button id="pgn-exit" class="mini" title="Tutup PGN"><i data-ic="x"></i></button>
     </div>
     <div id="pgn-moves" hidden></div>
-    <div class="btn-grid">
-      <button id="btn-start" class="mini"><i data-ic="reset"></i> Posisi awal</button>
-      <button id="btn-clear" class="mini"><i data-ic="trash"></i> Bersihkan</button>
-      <button id="btn-edit" class="mini"><i data-ic="pencil"></i> Susun manual</button>
-      <button id="btn-pgn" class="mini"><i data-ic="download"></i> Buka PGN</button>
-      <button id="btn-online" class="mini"><i data-ic="globe"></i> Game online</button>
-    </div>
     <div id="pgn-panel" hidden>
       <textarea id="pgn-text" rows="4" spellcheck="false"
         placeholder="Tempel teks PGN di sini…&#10;&#10;Contoh:&#10;1. e4 e5 2. Nf3 Nc6 3. Bb5 a6 *"></textarea>
@@ -137,8 +137,8 @@
   <div class="dbg-head">DEBUG <span id="dbg-clock"></span></div>
   <pre id="dbg-log"></pre>
 </div>
-<script src="js/engine.js?v=18"></script>
-<script type="module" src="js/app.js?v=18"></script>
+<script src="js/engine.js?v=19"></script>
+<script type="module" src="js/app.js?v=19"></script>
 <script>
 /* Service worker: cache engine + app biar load berikutnya instan & offline-ready. */
 if ("serviceWorker" in navigator) {
