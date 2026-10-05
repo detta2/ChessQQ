@@ -1,6 +1,6 @@
 /* ChessQQ — UI papan, editor, panah prediksi, hasil analisis, mentor. */
-import { Chess, validateFen } from "./chess.js?v=20";
-import { mentorFor, alasanSingkat } from "./mentor.js?v=20";
+import { Chess, validateFen } from "./chess.js?v=21";
+import { mentorFor, alasanSingkat } from "./mentor.js?v=21";
 
 const $ = (id) => document.getElementById(id);
 const esc = (s) => String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
@@ -53,9 +53,6 @@ let lastResults = [];
 let lastDepth = 0;
 let autoSide = null; // 'w' | 'b' | null — warna yang dimainkan bot
 let autoToken = 0;   // dibatalkan tiap ada aksi baru (ganti mode / stop)
-let coachOn = true;  // pelatih langkah: nilai tiap langkah user
-let coachToken = 0;  // batalkan review basi tiap ada langkah baru
-let coachBest = null; // {fenBefore, uci} — untuk tombol "Lihat"
 const engine = new ChessEngine();
 
 /* ---------- papan ---------- */
@@ -163,7 +160,7 @@ function loadFenString(s) {
   if (!v.ok) { fenInput.classList.add("bad"); setStatus("FEN tidak valid: " + v.error); return false; }
   exitPgn();
   chess.load(s);
-  exitPreview(); syncFen(); renderBoard(); clearArrows(); hideCoach();
+  exitPreview(); syncFen(); renderBoard(); clearArrows();
   fenInput.classList.remove("bad");
   maybeAutoPlay();
   return true;
@@ -178,7 +175,7 @@ $("btn-paste").addEventListener("click", async () => {
   } catch (e) { setStatus("Clipboard tidak bisa dibaca — ketik/tempel manual."); fenInput.focus(); }
 });
 $("btn-start").addEventListener("click", () => {
-  chess.reset(); exitPgn(); exitPreview(); syncFen(); renderBoard(); clearArrows(); hideResults(); hideCoach();
+  chess.reset(); exitPgn(); exitPreview(); syncFen(); renderBoard(); clearArrows(); hideResults();
   setStatus("Posisi awal dimuat.");
   maybeAutoPlay();
 });
@@ -187,7 +184,7 @@ $("btn-clear").addEventListener("click", () => {
   chess.put({ type: "k", color: "w" }, "e1");
   chess.put({ type: "k", color: "b" }, "e8");
   exitPgn();
-  exitPreview(); syncFen(); renderBoard(); clearArrows(); hideResults(); hideCoach();
+  exitPreview(); syncFen(); renderBoard(); clearArrows(); hideResults();
   setStatus("Papan dibersihkan (raja tetap). Nyalakan ✏️ Edit untuk susun.");
   maybeAutoPlay();
 });
@@ -210,7 +207,6 @@ function openPgn(text) {
   if (!sans.length) { setStatus("PGN tidak berisi langkah."); return false; }
   pgn = { text, sans, idx: sans.length };
   $("pgn-panel").hidden = true;
-  hideCoach();
   pgnGoto(sans.length);
   const h = pgnHeaders();
   setStatus(`Game dibuka: ${h.w} vs ${h.b}, ${sans.length} langkah.`);
@@ -434,14 +430,12 @@ function tryMove(from, to) {
     const p = chess.get(from);
     if (!p) return false;
     const promo = (p.type === "p" && (to[1] === "8" || to[1] === "1")) ? "q" : undefined;
-    const fenBefore = chess.fen();
     const m = chess.move({ from, to, promotion: promo });
     if (!m) return false;
     exitPgn();
     exitPreview(); syncFen(); renderBoard(); clearArrows(); hideResults();
     setStatus("Langkah: " + m.san + " — tekan Analisis untuk prediksi baru.");
     maybeAutoPlay();
-    coachReview(fenBefore, m);
     return true;
   } catch (e) { return false; }
 }
@@ -684,12 +678,15 @@ $("depth-seg").addEventListener("click", (e) => {
   depth = +b.dataset.d;
   [...$("depth-seg").children].forEach((x) => x.classList.toggle("on", x === b));
 });
+let stopWatchdog = null; // timer "dihentikan paksa" — harus dibatalkan tiap aksi baru
 $("btn-analyze").addEventListener("click", async () => {
+  if (stopWatchdog) { clearTimeout(stopWatchdog); stopWatchdog = null; }
   if (engine.isBusy()) {
     engine.stop();
     autoToken++; // batalkan juga langkah bot yang tertunda
     setStatus("Menghentikan…");
-    setTimeout(() => {
+    stopWatchdog = setTimeout(() => {
+      stopWatchdog = null;
       if (engine.isBusy()) {
         engine.forceStop();
         setAnalyzing(false);
@@ -718,111 +715,13 @@ $("btn-analyze").addEventListener("click", async () => {
   lastDepth = depth;
   engine.analyze(fen, depth,
     (lines, d) => onEngineUpdate(lines, d),
-    () => { setAnalyzing(false); setStatus(`Selesai — depth ${lastDepth}.`); }
+    () => {
+      setAnalyzing(false);
+      setStatus(`Selesai — depth ${lastDepth}.`);
+      maybeAutoPlay(); // kalau giliran bot, bot lanjut jalan (biar nggak macet)
+    }
   );
 });
-/* ---------- pelatih langkah: nilai tiap langkah user ---------- */
-function quickEval(fen, d) {
-  return new Promise((resolve) => {
-    let last = null;
-    engine.analyze(fen, d,
-      (lines) => { if (lines && lines[0]) last = lines[0]; },
-      () => resolve(last));
-  });
-}
-function hideCoach() { $("coach-card").hidden = true; coachBest = null; }
-function showCoachThinking() {
-  const card = $("coach-card");
-  card.hidden = false;
-  $("coach-badge").className = "coach-badge thinking";
-  $("coach-badge").textContent = "Mikir…";
-  $("coach-body").innerHTML = "Pelatih lagi menilai langkahmu…";
-}
-function fmtP(cp) {
-  const p = cp / 100;
-  return (p > 0 ? "+" : "") + p.toFixed(1).replace(".", ",");
-}
-async function coachReview(fenBefore, m) {
-  if (!coachOn) return;
-  if (engine.isBusy()) return; // jangan ganggu analisis / bot yang sedang jalan
-  const token = ++coachToken;
-  coachBest = null;
-  try { await engine.load(); } catch (e) { return; }
-  if (token !== coachToken) return;
-  showCoachThinking();
-  const d = Math.min(depth, 12);
-  const before = await quickEval(fenBefore, d);
-  if (token !== coachToken || !before || !before.pv || !before.pv[0]) { if (token === coachToken) hideCoach(); return; }
-  let fenAfter;
-  try {
-    const c = new Chess(fenBefore);
-    c.move({ from: m.from, to: m.to, promotion: m.promotion });
-    fenAfter = c.fen();
-  } catch (e) { hideCoach(); return; }
-  const after = await quickEval(fenAfter, d);
-  if (token !== coachToken || !after) { if (token === coachToken) hideCoach(); return; }
-  if (chess.fen() !== fenAfter) return; // posisi sudah berubah — basi
-  renderCoach(fenBefore, m, before, after);
-}
-function renderCoach(fenBefore, m, before, after) {
-  const turnBefore = fenBefore.split(" ")[1] || "w";
-  const turnAfter = turnBefore === "w" ? "b" : "w";
-  const sgn = m.color === "w" ? 1 : -1;
-  const bestWp = cpToWhitePov(before.kind, before.val, turnBefore);
-  const afterWp = cpToWhitePov(after.kind, after.val, turnAfter);
-  const bestUser = sgn * bestWp, afterUser = sgn * afterWp;
-  const drop = bestUser - afterUser; // cp, positif = rugi
-  const bestUci = before.pv[0];
-  const userUci = m.from + m.to + (m.promotion || "");
-  const isBest = userUci === bestUci;
-  const bestSan = uciToSan(fenBefore, bestUci) || bestUci;
-  const alasan = alasanSingkat(fenBefore, { uci: bestUci, kind: before.kind, score: before.val });
-  let badge, cls, detail;
-  if (isBest) {
-    badge = "Langkah terbaik!"; cls = "best";
-    detail = `Persis pilihan engine. ${esc(alasan)}.`;
-  } else {
-    coachBest = { fenBefore, uci: bestUci };
-    const hilang = (drop / 100).toFixed(1).replace(".", ",");
-    if (drop <= 30) { badge = "Bagus"; cls = "good"; }
-    else if (drop <= 100) { badge = "Kurang tepat"; cls = "ok"; }
-    else if (drop <= 200) { badge = "Kesalahan"; cls = "bad"; }
-    else { badge = "Blunder"; cls = "blunder"; }
-    detail = `Terbaik: <b>${esc(bestSan)}</b> — ${esc(alasan)}. ` +
-      `Langkahmu <b>${esc(m.san)}</b> turun ${hilang} poin.`;
-  }
-  const badgeEl = $("coach-badge");
-  badgeEl.className = "coach-badge " + cls;
-  badgeEl.textContent = badge;
-  $("coach-body").innerHTML =
-    `<div>${detail}</div>` +
-    `<div class="coach-eval">Eval: ${fmtP(bestUser)} → ${fmtP(afterUser)}</div>` +
-    (isBest ? "" :
-      `<div class="coach-row"><button class="mini" id="coach-show">${ic("play")}<span>Lihat langkah terbaik</span></button></div>`);
-  $("coach-card").hidden = false;
-  const sb = $("coach-show");
-  if (sb) sb.addEventListener("click", previewCoachBest);
-}
-function previewCoachBest() {
-  if (!coachBest) return;
-  try {
-    const c = new Chess(coachBest.fenBefore);
-    const u = coachBest.uci;
-    c.move({ from: u.slice(0, 2), to: u.slice(2, 4), promotion: u.length > 4 ? u[4] : undefined });
-    previewFen = c.fen();
-    renderBoard(previewFen); clearArrows();
-    $("preview-chip").hidden = false;
-  } catch (e) { /* abaikan */ }
-}
-$("coach-toggle").addEventListener("click", () => {
-  coachOn = !coachOn;
-  $("coach-toggle").classList.toggle("on", coachOn);
-  coachToken++;
-  if (!coachOn) hideCoach();
-  setStatus(coachOn ? "Pelatih aktif — tiap langkahmu dinilai." : "Pelatih mati.");
-});
-$("coach-close").addEventListener("click", hideCoach);
-
 /* ---------- bot otomatis ---------- */
 function maybeAutoPlay() {
   if (!autoSide) return;
@@ -856,7 +755,7 @@ function maybeAutoPlay() {
             promotion: bestUci.length > 4 ? bestUci[4] : undefined,
           });
           if (!mv) return;
-          exitPreview(); syncFen(); renderBoard(); clearArrows();
+          exitPreview(); syncFen(); renderBoard(); clearArrows(); hideResults();
           const sesudah = new Chess(chess.fen());
           let akhir = "";
           if (sesudah.isCheckmate()) akhir = " — SKAKMAT! 🏆";
