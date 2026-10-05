@@ -1,0 +1,118 @@
+<!doctype html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>♞ ChessQQ — Prediksi Langkah Musuh</title>
+<link rel="stylesheet" href="css/style.css?v=13">
+</head>
+<body>
+<header class="topbar">
+  <div class="brand">
+    <span class="mark">♞</span>
+    <div class="brand-tx">
+      <h1>ChessQQ</h1>
+      <span class="tag">Stockfish 18 · prediksi + mentor</span>
+    </div>
+  </div>
+</header>
+
+<main>
+  <section class="board-sec">
+    <div class="board-wrap">
+      <div class="evalbar" title="Evaluasi (perspektif putih)">
+        <div class="eval-track"><div id="evalfill"></div></div>
+        <span id="evallabel">0.0</span>
+      </div>
+      <div id="board">
+        <div id="squares"></div>
+        <svg id="arrows" viewBox="0 0 800 800" preserveAspectRatio="none"></svg>
+        <button id="preview-chip" hidden>← Kembali ke posisi</button>
+        <button id="mentor-fab" title="Tanya Mentor">🎓</button>
+      </div>
+    </div>
+    <div class="board-meta">
+      <span id="turn-chip">⚪ Putih jalan</span>
+      <div class="meta-right">
+        <select id="auto-sel" class="mini" title="Bot otomatis">
+          <option value="off">🤖 Mati</option>
+          <option value="w">🤖 Putih</option>
+          <option value="b">🤖 Hitam</option>
+        </select>
+        <button id="btn-flip" class="mini">⇄ Balik papan</button>
+      </div>
+    </div>
+    <p class="hint-line">Ketuk bidak lalu ketuk tujuan — atau geser langsung.</p>
+  </section>
+
+  <section class="card">
+    <div class="fen-row">
+      <input id="fen" spellcheck="false" autocomplete="off"
+        placeholder="rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1">
+      <button id="btn-paste" class="mini" title="Tempel dari clipboard">📋</button>
+    </div>
+    <div class="btn-grid">
+      <button id="btn-start" class="mini">♞ Posisi awal</button>
+      <button id="btn-clear" class="mini">🧹 Bersihkan</button>
+      <button id="btn-edit" class="mini">✏️ Susun manual</button>
+    </div>
+    <div id="editor" hidden>
+      <div id="palette"></div>
+      <div class="row">
+        <span class="lbl">Giliran:</span>
+        <button id="turn-w" class="seg on">⚪ Putih</button>
+        <button id="turn-b" class="seg">⚫ Hitam</button>
+      </div>
+      <p class="tip">Ketuk bidak di atas, lalu ketuk kotak di papan. Ketuk 🧽 lalu kotak untuk menghapus.</p>
+    </div>
+  </section>
+
+  <section class="card results" id="results-card" hidden>
+    <h2>🎯 Prediksi langkah musuh</h2>
+    <p class="tip" id="predict-note"></p>
+    <ol id="moves"></ol>
+  </section>
+
+  <footer>Engine Stockfish 18 · jalan 100% di HP kamu (WebAssembly) · tanpa server · gratis</footer>
+</main>
+
+<div id="mentor-modal" hidden>
+  <div class="mentor-sheet">
+    <div class="mentor-head">
+      <span>🎓 Mentor ChessQQ</span>
+      <button id="mentor-close" aria-label="Tutup">✕</button>
+    </div>
+    <div id="mentor-body"></div>
+  </div>
+</div>
+
+<div class="dock">
+  <div class="dock-inner">
+    <div class="seg-group" id="depth-seg" role="group" aria-label="Kedalaman analisis">
+      <button data-d="10">Kilat</button>
+      <button data-d="16" class="on">Normal</button>
+      <button data-d="22">Mendalam</button>
+    </div>
+    <button id="btn-analyze" class="primary">🔍 Analisis</button>
+  </div>
+  <div id="engine-status">Engine siap · diunduh sekali (±7MB) saat pertama analisis</div>
+  <div class="progress" id="progress" hidden><div id="progress-fill"></div></div>
+</div>
+
+<div id="debug" hidden>
+  <div class="dbg-head">DEBUG <span id="dbg-clock"></span></div>
+  <pre id="dbg-log"></pre>
+</div>
+<script src="engine/worker-src.js"></script>
+<script src="js/engine.js?v=13"></script>
+<script type="module" src="js/app.js?v=13"></script>
+<script>
+/* Service worker: cache engine + app biar load berikutnya instan & offline-ready. */
+if ("serviceWorker" in navigator) {
+  window.addEventListener("load", () => {
+    navigator.serviceWorker.register("sw.js").catch(() => {});
+  });
+}
+</script>
+</body>
+</html>

@@ -1,8 +1,9 @@
 /* ChessQQ — UI papan, editor, panah prediksi, hasil analisis, mentor. */
-import { Chess, validateFen } from "./chess.js?v=13";
-import { mentorFor } from "./mentor.js?v=13";
+import { Chess, validateFen } from "./chess.js?v=14";
+import { mentorFor, alasanSingkat } from "./mentor.js?v=14";
 
 const $ = (id) => document.getElementById(id);
+const esc = (s) => String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
 const squaresEl = $("squares"), arrowsEl = $("arrows"), fenInput = $("fen");
 const ARROW_COLORS = ["#22c55e", "#eab308", "#ef4444"];
 
@@ -119,6 +120,7 @@ function loadFenString(s) {
   if (!s) return false;
   const v = validateFen(s);
   if (!v.ok) { fenInput.classList.add("bad"); setStatus("FEN tidak valid: " + v.error); return false; }
+  exitPgn();
   chess.load(s);
   exitPreview(); syncFen(); renderBoard(); clearArrows();
   fenInput.classList.remove("bad");
@@ -135,7 +137,7 @@ $("btn-paste").addEventListener("click", async () => {
   } catch (e) { setStatus("Clipboard tidak bisa dibaca — ketik/tempel manual."); fenInput.focus(); }
 });
 $("btn-start").addEventListener("click", () => {
-  chess.reset(); exitPreview(); syncFen(); renderBoard(); clearArrows(); hideResults();
+  chess.reset(); exitPgn(); exitPreview(); syncFen(); renderBoard(); clearArrows(); hideResults();
   setStatus("Posisi awal dimuat.");
   maybeAutoPlay();
 });
@@ -143,9 +145,156 @@ $("btn-clear").addEventListener("click", () => {
   chess.clear();
   chess.put({ type: "k", color: "w" }, "e1");
   chess.put({ type: "k", color: "b" }, "e8");
+  exitPgn();
   exitPreview(); syncFen(); renderBoard(); clearArrows(); hideResults();
   setStatus("Papan dibersihkan (raja tetap). Nyalakan ✏️ Edit untuk susun.");
   maybeAutoPlay();
+});
+
+/* ---------- PGN: buka game + navigator langkah ---------- */
+let pgn = null; // {text, sans:[], idx}
+function pgnHeaders() {
+  try {
+    const g = new Chess(); g.loadPgn(pgn.text);
+    const h = g.header();
+    return { w: h.White || "Putih", b: h.Black || "Hitam" };
+  } catch (e) { return { w: "Putih", b: "Hitam" }; }
+}
+function openPgn(text) {
+  text = (text || "").trim();
+  if (!text) { setStatus("Tempel teks PGN dulu."); return false; }
+  const g = new Chess();
+  try { g.loadPgn(text); } catch (e) { setStatus("PGN tidak valid: " + e.message); return false; }
+  const sans = g.history();
+  if (!sans.length) { setStatus("PGN tidak berisi langkah."); return false; }
+  pgn = { text, sans, idx: sans.length };
+  $("pgn-panel").hidden = true;
+  pgnGoto(sans.length);
+  const h = pgnHeaders();
+  setStatus(`Game dibuka: ${h.w} vs ${h.b}, ${sans.length} langkah.`);
+  return true;
+}
+function pgnGoto(i) {
+  if (!pgn) return;
+  i = Math.max(0, Math.min(pgn.sans.length, i));
+  pgn.idx = i;
+  try {
+    const g = new Chess();
+    g.loadPgn(pgn.text);
+    const n = g.history().length;
+    for (let k = 0; k < n - i; k++) g.undo();
+    chess.load(g.fen());
+  } catch (e) { setStatus("Gagal pindah langkah."); return; }
+  exitPreview(); syncFen(); renderBoard(); clearArrows(); hideResults();
+  renderPgnNav();
+}
+function exitPgn() {
+  if (!pgn) return;
+  pgn = null;
+  $("pgn-nav").hidden = true;
+  $("pgn-moves").hidden = true;
+}
+function renderPgnNav() {
+  const nav = $("pgn-nav"), mv = $("pgn-moves");
+  if (!pgn) { nav.hidden = true; mv.hidden = true; return; }
+  nav.hidden = false; mv.hidden = false;
+  const i = pgn.idx, n = pgn.sans.length;
+  const cur = i === 0 ? "posisi awal" : `${Math.ceil(i / 2)}. ${pgn.sans[i - 1]}`;
+  $("pgn-label").textContent = `${i}/${n} · ${cur}`;
+  let html = "";
+  for (let k = 0; k < n; k += 2) {
+    html += `<span class="pgn-no">${k / 2 + 1}.</span>`;
+    html += `<button class="pgn-mv${k + 1 === i ? " on" : ""}" data-i="${k + 1}">${esc(pgn.sans[k])}</button>`;
+    if (pgn.sans[k + 1])
+      html += `<button class="pgn-mv${k + 2 === i ? " on" : ""}" data-i="${k + 2}">${esc(pgn.sans[k + 1])}</button>`;
+  }
+  mv.innerHTML = html;
+  mv.querySelectorAll(".pgn-mv").forEach((b) =>
+    b.addEventListener("click", () => pgnGoto(+b.dataset.i)));
+  const on = mv.querySelector(".pgn-mv.on");
+  if (on) on.scrollIntoView({ block: "nearest" });
+}
+$("btn-pgn").addEventListener("click", () => {
+  $("pgn-panel").hidden = !$("pgn-panel").hidden;
+  $("online-panel").hidden = true;
+});
+$("btn-pgn-close").addEventListener("click", () => { $("pgn-panel").hidden = true; });
+$("btn-pgn-open").addEventListener("click", () => openPgn($("pgn-text").value));
+$("pgn-first").addEventListener("click", () => pgnGoto(0));
+$("pgn-prev").addEventListener("click", () => pgnGoto(pgn.idx - 1));
+$("pgn-next").addEventListener("click", () => pgnGoto(pgn.idx + 1));
+$("pgn-last").addEventListener("click", () => pgnGoto(pgn.sans.length));
+$("pgn-exit").addEventListener("click", () => {
+  exitPgn(); setStatus("PGN ditutup.");
+});
+
+/* ---------- game online: chess.com & lichess (API publik gratis) ---------- */
+function chesscomResult(wr, br) {
+  if (wr === "win") return "1–0";
+  if (br === "win") return "0–1";
+  return "½–½";
+}
+async function fetchChessCom(u) {
+  const r = await fetch("https://api.chess.com/pub/player/" + encodeURIComponent(u) + "/games/archives");
+  if (!r.ok) throw new Error("username tidak ketemu di chess.com");
+  const j = await r.json();
+  const arch = j.archives || [];
+  if (!arch.length) return [];
+  const g = await (await fetch(arch[arch.length - 1])).json();
+  return (g.games || []).slice(-20).reverse().map((x) => ({
+    pgn: x.pgn,
+    white: x.white.username, black: x.black.username,
+    res: chesscomResult(x.white.result, x.black.result),
+    meta: (x.time_class || "") + (x.end_time ? " · " + new Date(x.end_time * 1000).toLocaleDateString("id-ID", { day: "numeric", month: "short" }) : ""),
+  }));
+}
+async function fetchLichess(u) {
+  const r = await fetch("https://lichess.org/api/games/user/" + encodeURIComponent(u) + "?max=20&pgnInJson=true",
+    { headers: { Accept: "application/x-ndjson" } });
+  if (!r.ok) throw new Error("username tidak ketemu di lichess");
+  const t = await r.text();
+  return t.trim().split("\n").filter(Boolean).map((line) => {
+    const j = JSON.parse(line);
+    return {
+      pgn: j.pgn,
+      white: j.players.white.user.name, black: j.players.black.user.name,
+      res: j.winner === "white" ? "1–0" : j.winner === "black" ? "0–1" : "½–½",
+      meta: (j.speed || "") + (j.createdAt ? " · " + new Date(j.createdAt).toLocaleDateString("id-ID", { day: "numeric", month: "short" }) : ""),
+    };
+  });
+}
+function renderOnlineList(games) {
+  const el = $("online-list");
+  el.innerHTML = "";
+  games.forEach((gm) => {
+    const b = document.createElement("button");
+    b.className = "online-game";
+    b.innerHTML = `<b>${esc(gm.white)} <span class="vs">vs</span> ${esc(gm.black)}</b>` +
+      `<span>${esc(gm.res)} · ${esc(gm.meta)}</span>`;
+    b.addEventListener("click", () => {
+      $("online-panel").hidden = true;
+      if (openPgn(gm.pgn)) setStatus("Game dimuat — geser langkahnya, analisis posisi mana pun.");
+    });
+    el.appendChild(b);
+  });
+}
+$("btn-online").addEventListener("click", () => {
+  $("online-panel").hidden = !$("online-panel").hidden;
+  $("pgn-panel").hidden = true;
+});
+$("btn-online-close").addEventListener("click", () => { $("online-panel").hidden = true; });
+$("btn-online-go").addEventListener("click", async () => {
+  const u = $("online-user").value.trim();
+  if (!u) { setStatus("Isi username dulu."); return; }
+  const src = $("online-src").value;
+  setStatus("Mengambil game… (butuh internet)");
+  $("online-list").innerHTML = "";
+  try {
+    const games = src === "chesscom" ? await fetchChessCom(u) : await fetchLichess(u);
+    if (!games.length) { setStatus("Tidak ada game ketemu."); return; }
+    renderOnlineList(games);
+    setStatus(`${games.length} game terakhir ketemu — ketuk untuk buka.`);
+  } catch (e) { setStatus("Gagal: " + e.message); }
 });
 $("btn-flip").addEventListener("click", () => {
   orientation = orientation === "w" ? "b" : "w";
@@ -242,6 +391,7 @@ function tryMove(from, to) {
     const promo = (p.type === "p" && (to[1] === "8" || to[1] === "1")) ? "q" : undefined;
     const m = chess.move({ from, to, promotion: promo });
     if (!m) return false;
+    exitPgn();
     exitPreview(); syncFen(); renderBoard(); clearArrows(); hideResults();
     setStatus("Langkah: " + m.san + " — tekan Analisis untuk prediksi baru.");
     maybeAutoPlay();
@@ -369,10 +519,15 @@ function renderResults() {
   const card = $("results-card"), ol = $("moves");
   if (!lastResults.length) { card.hidden = true; return; }
   card.hidden = false;
-  const turn = chess.turn();
+  const turn = chess.turn(), fen = chess.fen();
   $("predict-note").textContent =
     `Giliran ${turn === "w" ? "putih" : "hitam"} — ini 3 langkah terbaik menurut Stockfish. ` +
-    (turn === "b" ? "Kalau kamu putih, panah hijau ≈ musuh bakal jalan ke situ." : "Ketuk langkah untuk pratinjau di papan.");
+    (turn === "b" ? "Kalau kamu putih, panah hijau ≈ musuh bakal jalan ke situ." : "Ketuk langkah untuk pratinjau di papan, 💬 untuk tanya mentor.");
+  const th = $("threat-line"), t0 = lastResults[0];
+  if (t0) {
+    th.hidden = false;
+    th.innerHTML = `⚠️ Ancaman utama: <b>${esc(t0.san)}</b> — ${esc(alasanSingkat(fen, t0))}`;
+  } else th.hidden = true;
   ol.innerHTML = "";
   lastResults.forEach((m, i) => {
     const li = document.createElement("li");
@@ -380,6 +535,12 @@ function renderResults() {
       `<span class="rank r${i + 1}">${i + 1}</span>` +
       `<div class="mv-main"><div class="san">${m.san}</div><div class="pv">${m.pv.join(" ")}</div></div>` +
       `<span class="eval ${String(m.eval).startsWith("-") ? "minus" : "plus"}">${m.eval}</span>`;
+    const ask = document.createElement("button");
+    ask.className = "mini ask";
+    ask.textContent = "💬";
+    ask.title = "Tanya mentor soal langkah ini";
+    ask.addEventListener("click", (e) => { e.stopPropagation(); openMentorFor(i); });
+    li.appendChild(ask);
     li.addEventListener("click", () => previewMove(i));
     ol.appendChild(li);
   });
@@ -398,11 +559,20 @@ function closeMentor() {
   if (md) md.hidden = true;
   document.body.style.overflow = "";
 }
-function renderMentor() {
+function openMentorFor(i) {
+  const chosen = lastResults[i];
+  if (!chosen) return;
+  const rotated = [chosen, ...lastResults.filter((_, j) => j !== i)];
+  renderMentor(rotated);
+  $("mentor-modal").hidden = false;
+  document.body.style.overflow = "hidden";
+}
+function renderMentor(results) {
+  results = results || lastResults;
   const body = $("mentor-body");
   const turn = chess.turn();
   let m;
-  try { m = mentorFor(chess.fen(), lastResults, turn); }
+  try { m = mentorFor(chess.fen(), results, turn); }
   catch (e) { body.innerHTML = "<p class='tip'>Mentor gagal membaca posisi.</p>"; return; }
   const esc = (s) => String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;");
   let html = `<p class="mentor-title">${esc(m.judul)}</p>`;

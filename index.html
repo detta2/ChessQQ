@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>♞ ChessQQ — Prediksi Langkah Musuh</title>
-<link rel="stylesheet" href="css/style.css?v=13">
+<link rel="stylesheet" href="css/style.css?v=14">
 </head>
 <body>
 <header class="topbar">
@@ -55,7 +55,38 @@
       <button id="btn-start" class="mini">♞ Posisi awal</button>
       <button id="btn-clear" class="mini">🧹 Bersihkan</button>
       <button id="btn-edit" class="mini">✏️ Susun manual</button>
+      <button id="btn-pgn" class="mini">📥 Buka PGN</button>
+      <button id="btn-online" class="mini">🌐 Game online</button>
     </div>
+    <div id="pgn-panel" hidden>
+      <textarea id="pgn-text" rows="4" spellcheck="false"
+        placeholder="Tempel teks PGN di sini…&#10;&#10;Contoh:&#10;1. e4 e5 2. Nf3 Nc6 3. Bb5 a6 *"></textarea>
+      <div class="row">
+        <button id="btn-pgn-open" class="mini">▶ Buka game</button>
+        <button id="btn-pgn-close" class="mini">Tutup</button>
+      </div>
+    </div>
+    <div id="online-panel" hidden>
+      <div class="fen-row">
+        <input id="online-user" spellcheck="false" autocomplete="off" placeholder="username">
+        <select id="online-src" class="mini" aria-label="Sumber">
+          <option value="chesscom">chess.com</option>
+          <option value="lichess">lichess</option>
+        </select>
+        <button id="btn-online-go" class="mini" title="Cari game">🔎</button>
+      </div>
+      <div id="online-list"></div>
+      <div class="row"><button id="btn-online-close" class="mini">Tutup</button></div>
+    </div>
+    <div id="pgn-nav" hidden>
+      <button id="pgn-first" class="mini" title="Awal game">⏮</button>
+      <button id="pgn-prev" class="mini" title="Langkah sebelumnya">◀</button>
+      <span id="pgn-label"></span>
+      <button id="pgn-next" class="mini" title="Langkah berikut">▶</button>
+      <button id="pgn-last" class="mini" title="Akhir game">⏭</button>
+      <button id="pgn-exit" class="mini" title="Tutup PGN">✕</button>
+    </div>
+    <div id="pgn-moves" hidden></div>
     <div id="editor" hidden>
       <div id="palette"></div>
       <div class="row">
@@ -70,6 +101,7 @@
   <section class="card results" id="results-card" hidden>
     <h2>🎯 Prediksi langkah musuh</h2>
     <p class="tip" id="predict-note"></p>
+    <p class="tip threat" id="threat-line" hidden></p>
     <ol id="moves"></ol>
   </section>
 
@@ -103,8 +135,8 @@
   <div class="dbg-head">DEBUG <span id="dbg-clock"></span></div>
   <pre id="dbg-log"></pre>
 </div>
-<script src="js/engine.js?v=13"></script>
-<script type="module" src="js/app.js?v=13"></script>
+<script src="js/engine.js?v=14"></script>
+<script type="module" src="js/app.js?v=14"></script>
 <script>
 /* Service worker: cache engine + app biar load berikutnya instan & offline-ready. */
 if ("serviceWorker" in navigator) {

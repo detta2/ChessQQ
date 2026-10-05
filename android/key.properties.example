@@ -1,0 +1,6 @@
+# CONTOH — copy menjadi key.properties lalu isi password keystore asli.
+# File key.properties TIDAK BOLEH di-commit ke git (sudah di .gitignore).
+storePassword=GANTI_DENGAN_PASSWORD_KEYSTORE
+keyPassword=GANTI_DENGAN_PASSWORD_KEY
+keyAlias=kompresminimax
+storeFile=keystore/release.jks
