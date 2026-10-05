@@ -91,17 +91,21 @@
         w.postMessage("uci");
       }
 
-      // Di dalam APK (file://), WebView memblokir Worker dari URL file://.
-      // Solusi: baca file worker jadi teks, jalankan via Blob URL.
-      // Di web biasa (https) perilaku tidak berubah.
+      // Di dalam APK (file://), WebView memblokir Worker dari URL file://
+      // dan juga fetch() file://. Solusi: kode worker disuntik via tag
+      // <script> (window.__STOCKFISH_SRC, dibuat saat build APK), lalu
+      // dijalankan via Blob URL. Di web biasa (https) perilaku tidak berubah.
       if (typeof location !== "undefined" && location.protocol === "file:") {
-        fetch("engine/stockfish.js").then(function (r) { return r.text(); }).then(function (code) {
-          var blobUrl = URL.createObjectURL(new Blob([code], { type: "application/javascript" }));
+        try {
+          if (typeof window === "undefined" || !window.__STOCKFISH_SRC) {
+            throw new Error("worker-src.js tidak dimuat");
+          }
+          var blobUrl = URL.createObjectURL(new Blob([window.__STOCKFISH_SRC], { type: "application/javascript" }));
           startWorker(blobUrl);
-        }).catch(function (e) {
+        } catch (e) {
           self._loadPromise = null;
-          reject(new Error("Engine error: gagal membaca file engine (" + (e.message || e) + ")"));
-        });
+          reject(new Error("Engine error: gagal menyiapkan worker (" + (e.message || e) + ")"));
+        }
       } else {
         startWorker("engine/stockfish.js");
       }
