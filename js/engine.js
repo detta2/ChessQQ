@@ -38,56 +38,73 @@
     if (this._loadPromise) return this._loadPromise;
 
     this._loadPromise = new Promise(function (resolve, reject) {
-      var w;
-      try {
-        w = new Worker("engine/stockfish.js");
-      } catch (e) {
-        self._loadPromise = null;
-        reject(new Error("Web Worker tidak didukung peramban ini."));
-        return;
-      }
-      self.worker = w;
-
-      var done = false;
-      var timer = setTimeout(function () {
-        if (!done) {
-          done = true;
-          self._fail("Engine tidak merespons (timeout 30 dtk).");
-          reject(new Error("Engine tidak merespons (timeout 30 dtk)."));
-        }
-      }, 30000);
-
-      w.onmessage = function (e) {
-        var line = String(e.data);
-        if (self._onRaw) self._onRaw("← " + line.slice(0, 200));
-        if (!self.ready) {
-          if (line === "uciok") {
-            done = true;
-            clearTimeout(timer);
-            self.ready = true;
-            w.postMessage("setoption name MultiPV value 3");
-            resolve();
-          }
+      function startWorker(url) {
+        var w;
+        try {
+          w = new Worker(url);
+        } catch (e) {
+          self._loadPromise = null;
+          reject(new Error("Web Worker tidak didukung peramban ini."));
           return;
         }
-        self._handle(line);
-      };
-      w.onerror = function (e) {
-        if (self._onRaw) self._onRaw("⚠ worker error: " + (e.message || e.type || "?"));
-        if (!done) {
-          done = true;
-          clearTimeout(timer);
-          var msg = "Engine error: " + (e.message || "gagal dimuat");
+        self.worker = w;
+
+        var done = false;
+        var timer = setTimeout(function () {
+          if (!done) {
+            done = true;
+            self._fail("Engine tidak merespons (timeout 30 dtk).");
+            reject(new Error("Engine tidak merespons (timeout 30 dtk)."));
+          }
+        }, 30000);
+
+        w.onmessage = function (e) {
+          var line = String(e.data);
+          if (self._onRaw) self._onRaw("← " + line.slice(0, 200));
+          if (!self.ready) {
+            if (line === "uciok") {
+              done = true;
+              clearTimeout(timer);
+              self.ready = true;
+              w.postMessage("setoption name MultiPV value 3");
+              resolve();
+            }
+            return;
+          }
+          self._handle(line);
+        };
+        w.onerror = function (e) {
+          if (self._onRaw) self._onRaw("⚠ worker error: " + (e.message || e.type || "?"));
+          if (!done) {
+            done = true;
+            clearTimeout(timer);
+            var msg = "Engine error: " + (e.message || "gagal dimuat");
+            self._loadPromise = null;
+            self.worker = null;
+            reject(new Error(msg));
+          } else {
+            self._fail("Engine berhenti tiba-tiba.");
+          }
+        };
+        // PENTING: hanya string UCI — jangan kirim objek apa pun,
+        // loader akan crash (TypeError) kalau menerima non-string.
+        w.postMessage("uci");
+      }
+
+      // Di dalam APK (file://), WebView memblokir Worker dari URL file://.
+      // Solusi: baca file worker jadi teks, jalankan via Blob URL.
+      // Di web biasa (https) perilaku tidak berubah.
+      if (typeof location !== "undefined" && location.protocol === "file:") {
+        fetch("engine/stockfish.js").then(function (r) { return r.text(); }).then(function (code) {
+          var blobUrl = URL.createObjectURL(new Blob([code], { type: "application/javascript" }));
+          startWorker(blobUrl);
+        }).catch(function (e) {
           self._loadPromise = null;
-          self.worker = null;
-          reject(new Error(msg));
-        } else {
-          self._fail("Engine berhenti tiba-tiba.");
-        }
-      };
-      // PENTING: hanya string UCI — jangan kirim objek apa pun,
-      // loader akan crash (TypeError) kalau menerima non-string.
-      w.postMessage("uci");
+          reject(new Error("Engine error: gagal membaca file engine (" + (e.message || e) + ")"));
+        });
+      } else {
+        startWorker("engine/stockfish.js");
+      }
     });
     return this._loadPromise;
   };
