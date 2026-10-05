@@ -1,6 +1,6 @@
 /* ChessQQ — UI papan, editor, panah prediksi, hasil analisis, mentor. */
-import { Chess, validateFen } from "./chess.js?v=16";
-import { mentorFor, alasanSingkat } from "./mentor.js?v=16";
+import { Chess, validateFen } from "./chess.js?v=17";
+import { mentorFor, alasanSingkat } from "./mentor.js?v=17";
 
 const $ = (id) => document.getElementById(id);
 const esc = (s) => String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");

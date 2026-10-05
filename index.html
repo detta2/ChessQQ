@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>♞ ChessQQ — Prediksi Langkah Musuh</title>
-<link rel="stylesheet" href="css/style.css?v=16">
+<link rel="stylesheet" href="css/style.css?v=17">
 </head>
 <body>
 <header class="topbar">
@@ -48,11 +48,15 @@
   </section>
 
   <section class="card">
-    <div class="fen-row">
-      <input id="fen" spellcheck="false" autocomplete="off"
-        placeholder="rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1">
-      <button id="btn-paste" class="mini" title="Tempel dari clipboard"><i data-ic="clipboard"></i></button>
+    <div id="pgn-nav" hidden>
+      <button id="pgn-first" class="mini" title="Awal game"><i data-ic="skip-back"></i></button>
+      <button id="pgn-prev" class="mini" title="Langkah sebelumnya"><i data-ic="chev-left"></i></button>
+      <span id="pgn-label"></span>
+      <button id="pgn-next" class="mini" title="Langkah berikut"><i data-ic="chev-right"></i></button>
+      <button id="pgn-last" class="mini" title="Akhir game"><i data-ic="skip-fwd"></i></button>
+      <button id="pgn-exit" class="mini" title="Tutup PGN"><i data-ic="x"></i></button>
     </div>
+    <div id="pgn-moves" hidden></div>
     <div class="btn-grid">
       <button id="btn-start" class="mini"><i data-ic="reset"></i> Posisi awal</button>
       <button id="btn-clear" class="mini"><i data-ic="trash"></i> Bersihkan</button>
@@ -80,15 +84,11 @@
       <div id="online-list"></div>
       <div class="row"><button id="btn-online-close" class="mini"><i data-ic="x"></i> Tutup</button></div>
     </div>
-    <div id="pgn-nav" hidden>
-      <button id="pgn-first" class="mini" title="Awal game"><i data-ic="skip-back"></i></button>
-      <button id="pgn-prev" class="mini" title="Langkah sebelumnya"><i data-ic="chev-left"></i></button>
-      <span id="pgn-label"></span>
-      <button id="pgn-next" class="mini" title="Langkah berikut"><i data-ic="chev-right"></i></button>
-      <button id="pgn-last" class="mini" title="Akhir game"><i data-ic="skip-fwd"></i></button>
-      <button id="pgn-exit" class="mini" title="Tutup PGN"><i data-ic="x"></i></button>
+    <div class="fen-row fen-bottom">
+      <input id="fen" spellcheck="false" autocomplete="off"
+        placeholder="rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1">
+      <button id="btn-paste" class="mini" title="Tempel dari clipboard"><i data-ic="clipboard"></i></button>
     </div>
-    <div id="pgn-moves" hidden></div>
     <div id="editor" hidden>
       <div id="palette"></div>
       <div class="row">
@@ -137,8 +137,8 @@
   <div class="dbg-head">DEBUG <span id="dbg-clock"></span></div>
   <pre id="dbg-log"></pre>
 </div>
-<script src="js/engine.js?v=16"></script>
-<script type="module" src="js/app.js?v=16"></script>
+<script src="js/engine.js?v=17"></script>
+<script type="module" src="js/app.js?v=17"></script>
 <script>
 /* Service worker: cache engine + app biar load berikutnya instan & offline-ready. */
 if ("serviceWorker" in navigator) {
