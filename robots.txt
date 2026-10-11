@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://detta2.github.io/ChessQQ/sitemap.xml
