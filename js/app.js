@@ -1,7 +1,7 @@
 /* ChessQQ — UI papan, editor, panah prediksi, hasil analisis, mentor. */
-import { Chess, validateFen } from "./chess.js?v=22";
-import { mentorFor, alasanSingkat } from "./mentor.js?v=22";
-import { detectOpening, SCENARIOS } from "./openings.js?v=22";
+import { Chess, validateFen } from "./chess.js?v=23";
+import { mentorFor, alasanSingkat } from "./mentor.js?v=23";
+import { detectOpening, SCENARIOS } from "./openings.js?v=23";
 
 const $ = (id) => document.getElementById(id);
 const esc = (s) => String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
@@ -461,6 +461,7 @@ function tryMove(from, to) {
     const promo = (p.type === "p" && (to[1] === "8" || to[1] === "1")) ? "q" : undefined;
     const m = chess.move({ from, to, promotion: promo });
     if (!m) return false;
+    if (engine.isBusy()) { engine.stop(); setAnalyzing(false); } // analisis posisi lama jangan menimpa posisi baru
     exitPgn();
     if (wasPgn) gameBaseFen = fenBefore;
     redoStack = [];
@@ -473,7 +474,7 @@ function tryMove(from, to) {
 }
 
 function onPointerDown(e, sq) {
-  if (previewFen) return;
+  if (previewFen) exitPreview(); // ketuk papan selalu membatalkan pratinjau — jangan pernah terasa terkunci
   if (editMode) { editTap(sq); return; }
   e.preventDefault();
   if (sel && sq !== sel && tryMove(sel, sq)) { clearSel(); renderBoard(); return; }
@@ -710,6 +711,7 @@ function previewMove(i) {
     previewFen = c.fen();
     renderBoard(previewFen); clearArrows();
     $("preview-chip").hidden = false;
+    setStatus("Pratinjau langkah " + m.san + " — ketuk papan mana saja untuk kembali ke posisi asli dan main dari sana.");
     [...$("moves").children].forEach((li, j) => li.classList.toggle("on", j === i));
   } catch (e) { /* abaikan */ }
 }
