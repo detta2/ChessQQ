@@ -1,15 +1,16 @@
 /* ChessQQ service worker — simpan engine + app di HP biar load instan & bisa offline.
    Tiap release: naikkan CACHE (samakan dengan ?v= di index.html). */
-const CACHE = "chessqq-v21";
+const CACHE = "chessqq-v22";
 const PIECES = ["wK", "wQ", "wR", "wB", "wN", "wP", "bK", "bQ", "bR", "bB", "bN", "bP"];
 const CORE = [
   "./",
   "./index.html",
-  "./css/style.css?v=13",
-  "./js/app.js?v=13",
-  "./js/engine.js?v=13",
-  "./js/mentor.js?v=13",
-  "./js/chess.js?v=13",
+  "./css/style.css?v=22",
+  "./js/app.js?v=22",
+  "./js/engine.js?v=22",
+  "./js/mentor.js?v=22",
+  "./js/chess.js?v=22",
+  "./js/openings.js?v=22",
   "./engine/stockfish.js",
   "./engine/stockfish.wasm",
   ...PIECES.map((p) => "./img/pieces/" + p + ".svg"),

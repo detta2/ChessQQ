@@ -4,16 +4,30 @@
 <meta charset="utf-8">
 <meta name="google-site-verification" content="NwryzLwTbI3z3snM5yOTWtQFbcRExZVpm91PQWon30o" />
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>♞ ChessQQ — Prediksi Langkah Musuh</title>
-<link rel="stylesheet" href="css/style.css?v=21">
+<title>ChessQQ — Kalkulator Prediksi Langkah Catur & Analisis Online Gratis</title>
+<meta name="description" content="ChessQQ: kalkulator prediksi langkah catur online gratis berbahasa Indonesia. Analisis posisi dengan Stockfish 18, prediksi balasan musuh, pelatih yang menjelaskan arti evaluasi (+0.2) dan menandai blunder, deteksi pembukaan, dan skenario belajar — 100% gratis, tanpa daftar, jalan langsung di browser HP.">
+<meta name="keywords" content="prediksi langkah catur, kalkulator catur, analisis catur online, stockfish online, arti evaluasi catur, deteksi blunder catur, belajar catur bahasa indonesia, pembukaan catur">
+<meta property="og:title" content="ChessQQ — Kalkulator Prediksi Langkah Catur & Analisis Online Gratis">
+<meta property="og:description" content="Prediksi langkah musuh, pelatih catur Bahasa Indonesia, deteksi blunder & pembukaan — gratis, 100% di browser.">
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://detta2.github.io/ChessQQ/">
+<link rel="stylesheet" href="css/style.css?v=22">
+<script type="application/ld+json">
+{"@context":"https://schema.org","@type":"FAQPage","mainEntity":[
+{"@type":"Question","name":"Bagaimana cara menggunakan kalkulator prediksi langkah catur ChessQQ?","acceptedAnswer":{"@type":"Answer","text":"Susun posisi di papan dengan menggerakkan bidak (atau tempel FEN/PGN dari Chess.com dan Lichess), lalu tekan tombol Analisis. Stockfish 18 akan menghitung 3 langkah terbaik beserta panah prediksi di atas papan: panah hijau adalah saran langkah terbaik, panah merah adalah prediksi balasan terkuat musuh."}},
+{"@type":"Question","name":"Apa arti angka evaluasi +0.2 dalam catur?","acceptedAnswer":{"@type":"Answer","text":"Angka evaluasi diukur dalam satuan pion (centipawn). +0.2 berarti putih unggul setara 0,2 pion — keunggulan sangat tipis, posisi praktis seimbang. +1.0 berarti putih unggul setara satu pion penuh. Angka negatif berarti hitam yang unggul, dan simbol # berarti skakmat paksa ditemukan."}},
+{"@type":"Question","name":"Apa perbedaan langkah Bagus, Kurang Tepat, Kesalahan, dan Blunder?","acceptedAnswer":{"@type":"Answer","text":"Kotak Pelatih ChessQQ membandingkan evaluasi sebelum dan sesudah langkahmu: selisih di bawah 0,5 pion = Bagus, 0,5–1,0 = Kurang Tepat, 1,0–2,5 = Kesalahan, dan di atas 2,5 pion (atau membuang bidak/skakmat) = Blunder. Langkah yang sama persis dengan pilihan mesin diberi badge Terbaik."}},
+{"@type":"Question","name":"Bagaimana cara menghindari blunder saat bermain catur?","acceptedAnswer":{"@type":"Answer","text":"Sebelum melangkah, biasakan 3 cek: (1) apakah bidak yang akan kupindah sedang menjaga bidak lain, (2) apakah petak tujuan diserang musuh (bidak menggantung), (3) apakah langkahku membuka serangan ke raja atau perwiraku. Gunakan Peta Bahaya dan Kotak Pelatih di ChessQQ untuk melatih kebiasaan ini."}},
+{"@type":"Question","name":"Apakah ChessQQ gratis dan harus menginstal aplikasi?","acceptedAnswer":{"@type":"Answer","text":"Gratis sepenuhnya dan tanpa instalasi. Engine Stockfish 18 berjalan 100% di browser HP atau komputermu (WebAssembly), posisi yang kamu analisis tidak dikirim ke server mana pun."}}]}
+</script>
 </head>
 <body>
 <header class="topbar">
   <div class="brand">
     <span class="mark"><img src="img/pieces/wN.svg" alt="ChessQQ"></span>
     <div class="brand-tx">
-      <h1>ChessQQ</h1>
-      <span class="tag">Stockfish 18 · prediksi + mentor</span>
+      <div class="brand-name">ChessQQ</div>
+      <span class="tag">Stockfish 18 · prediksi + pelatih catur</span>
     </div>
   </div>
 </header>
@@ -32,30 +46,60 @@
     </div>
     <div class="board-actions">
       <button id="mentor-fab" class="mini"><i data-ic="cap"></i> Mentor</button>
+      <button id="btn-share" class="mini"><i data-ic="share"></i> Bagikan Posisi</button>
       <button id="preview-chip" class="mini" hidden><i data-ic="back"></i> Kembali ke posisi</button>
     </div>
     <div class="board-meta">
       <span id="turn-chip"><span class="dot w"></span>Putih jalan</span>
       <div class="meta-right">
-        <select id="auto-sel" class="mini" title="Bot otomatis">
-          <option value="off">Auto: Mati</option>
-          <option value="w">Auto: Putih</option>
-          <option value="b">Auto: Hitam</option>
+        <select id="auto-sel" class="mini" title="Mode permainan">
+          <option value="off">Mode: Analisis Bebas</option>
+          <option value="w">Mode: Bot Putih</option>
+          <option value="b">Mode: Bot Hitam</option>
         </select>
         <button id="btn-flip" class="mini"><i data-ic="swap"></i> Balik papan</button>
       </div>
     </div>
     <p class="hint-line">Ketuk bidak lalu ketuk tujuan — atau geser langsung.</p>
+    <p id="eval-text" class="eval-text">Evaluasi: +0.20 (Seimbang)</p>
+    <p id="opening-line" class="opening-line" hidden>📖 <b id="opening-name"></b> — <span id="opening-desc"></span></p>
+  </section>
+
+  <section class="card coach" id="coach-card">
+    <h2>🎓 Kotak Pelatih Catur</h2>
+    <div id="coach-verdict" class="coach-verdict"><span class="coach-badge none">Menunggu langkahmu</span></div>
+    <ul id="coach-explain" class="coach-explain">
+      <li>Mainkan satu langkah di papan — pelatih menilai langkahmu (💎 Terbaik / 👍 Bagus / ⚠️ Kurang Tepat / ❌ Kesalahan / 💀 Blunder) dan menjelaskan alasannya dalam Bahasa Indonesia.</li>
+    </ul>
+    <div class="coach-grid">
+      <div class="coach-cell enemy">
+        <p class="coach-cap">🔴 Prediksi Balasan Musuh</p>
+        <p id="coach-enemy" class="coach-move">— tekan Analisis atau mainkan langkah —</p>
+      </div>
+      <div class="coach-cell best">
+        <p class="coach-cap">🟢 Saran Langkah Terbaik</p>
+        <p id="coach-best" class="coach-move">— tekan Analisis atau mainkan langkah —</p>
+      </div>
+    </div>
   </section>
 
   <section class="card">
     <div class="btn-grid">
       <button id="btn-start" class="mini"><i data-ic="reset"></i> Posisi awal</button>
+      <button id="btn-undo" class="mini"><i data-ic="undo"></i> Undo</button>
+      <button id="btn-redo" class="mini"><i data-ic="redo"></i> Redo</button>
       <button id="btn-clear" class="mini"><i data-ic="trash"></i> Bersihkan</button>
       <button id="btn-edit" class="mini"><i data-ic="pencil"></i> Susun manual</button>
-      <button id="btn-pgn" class="mini"><i data-ic="download"></i> Buka PGN</button>
+      <button id="btn-pgn" class="mini"><i data-ic="download"></i> Impor PGN / FEN</button>
       <button id="btn-online" class="mini"><i data-ic="globe"></i> Game online</button>
     </div>
+    <div class="scenario-row">
+      <label for="scenario-sel">🎓 Skenario Belajar &amp; Jebakan:</label>
+      <select id="scenario-sel" class="mini">
+        <option value="">— pilih skenario —</option>
+      </select>
+    </div>
+    <p class="tip" id="scenario-note" hidden></p>
     <div class="fen-row fen-below">
       <input id="fen" spellcheck="false" autocomplete="off"
         placeholder="rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1">
@@ -108,6 +152,32 @@
     <ol id="moves"></ol>
   </section>
 
+  <section class="card" id="history-card" hidden>
+    <h2>📜 Riwayat Langkah</h2>
+    <p class="tip">Ketuk langkah untuk melompat ke posisi itu. Undo/Redo juga tersedia di tombol kontrol.</p>
+    <div id="history-moves" class="pgn-moves"></div>
+  </section>
+
+  <section class="card seo-guide">
+    <h1>ChessQQ — Kalkulator Prediksi Langkah Catur &amp; Pelatih Analisis Bahasa Indonesia</h1>
+    <p>ChessQQ adalah kalkulator prediksi langkah catur online gratis yang berjalan 100% di browser HP atau komputermu dengan mesin Stockfish 18 — engine catur terkuat di dunia. Tidak ada data yang dikirim ke server: semua analisis terjadi di perangkatmu. Susun posisi apa pun di papan, impor game dari Chess.com atau Lichess, dan biarkan pelatih virtual menjelaskan setiap langkah dalam Bahasa Indonesia yang mudah dipahami pemula.</p>
+
+    <h2>Cara Menggunakan Kalkulator Prediksi Langkah Catur</h2>
+    <p>Pertama, atur posisi di papan: gerakkan bidak dengan ketuk-ketuk atau geser, tempel notasi FEN, atau impor teks PGN pertandinganmu lewat tombol "Impor PGN / FEN". Kedua, tekan tombol <b>Analisis</b> di bagian bawah layar dan pilih kedalaman (Kilat, Normal, atau Mendalam). Ketiga, baca hasilnya: tiga langkah terbaik muncul lengkap dengan garis variasinya, panah hijau di papan menunjukkan saran langkah terbaik, dan panah merah menunjukkan prediksi balasan terkuat musuh — persis fitur "prediksi langkah musuh" yang membuat ChessQQ dikenal. Keempat, ketuk tombol "🔗 Bagikan Posisi" untuk menyalin tautan berisi posisi saat ini dan mengirimkannya ke temanmu; siapa pun yang membuka tautan itu langsung melihat posisi yang sama.</p>
+
+    <h2>Arti Angka Evaluasi: Apa Maksudnya +0.2?</h2>
+    <p>Angka evaluasi (eval) mengukur siapa yang unggul, dalam satuan pion. Nilai <b>+0.2</b> artinya putih unggul setara 0,2 pion — keunggulan sangat tipis, posisi praktis masih seimbang. Patokan mudahnya: 0.0 berarti seimbang sempurna, +1.0 berarti putih unggul setara satu pion penuh (biasanya cukup untuk menang di endgame), +3.0 ke atas berarti keunggulan menentukan, dan angka negatif berarti hitam yang unggul. Simbol <b>#</b> berarti mesin menemukan skakmat paksa. Di ChessQQ angka ini selalu diterjemahkan menjadi teks — misalnya "Evaluasi: +0.2 (Putih Unggul Tipis)" — plus batang evaluasi visual di samping papan, jadi kamu tidak perlu menebak-nebak artinya.</p>
+
+    <h2>Badge Kualitas Langkah: Terbaik sampai Blunder</h2>
+    <p>Setiap kali kamu melangkah, Kotak Pelatih membandingkan evaluasi posisi sebelum dan sesudah langkahmu. Jika langkahmu sama dengan pilihan mesin, kamu mendapat badge 💎 <b>Terbaik</b>. Selisih di bawah 0,5 pion dinilai 👍 <b>Bagus</b>; 0,5–1,0 pion ⚠️ <b>Kurang Tepat</b>; 1,0–2,5 pion ❌ <b>Kesalahan</b>; dan di atas 2,5 pion — atau membuang bidak serta melewatkan skakmat — adalah 💀 <b>Blunder</b>. Pelatih juga menjelaskan penyebabnya secara konkret: bidak yang menggantung tanpa penjaga, skak yang terlewat, atau petak pusat yang diserahkan ke lawan.</p>
+
+    <h2>Tips Menghindari Blunder untuk Pemula</h2>
+    <p>Blunder adalah penyebab kekalahan nomor satu di level pemula — jauh lebih sering daripada strategi yang kurang bagus. Biasakan tiga pemeriksaan sebelum melangkah: pertama, cek apakah bidak yang akan kamu pindahkan sedang menjaga bidak lain; kedua, cek apakah petak tujuan sedang diserang musuh; ketiga, cek apakah langkahmu membuka garis serangan menuju raja atau perwiramu. Latih kebiasaan ini dengan mode Analisis Bebas di ChessQQ: mainkan langkahmu, baca penilaian pelatih, lalu gunakan Undo untuk mencoba alternatifnya. Pelajari juga pola dari skenario belajar seperti jebakan Scholar's Mate dan Fried Liver Attack agar kamu mengenalnya saat lawan mencobanya padamu.</p>
+
+    <h2>Belajar Pembukaan Catur dengan Deteksi Otomatis</h2>
+    <p>ChessQQ mengenali lebih dari 30 pembukaan populer — Italian Game, Ruy Lopez, Sicilian Defense, Caro-Kann, Queen's Gambit, King's Indian, London System, dan banyak lagi — lalu menampilkan nama dan penjelasan strategi dasarnya dalam satu kalimat saat langkahmu cocok dengan pola pembukaan tersebut. Dikombinasikan dengan pustaka skenario (posisi awal, jebakan pemula, latihan skakmat benteng, dan puzzle skakmat 2 langkah), ChessQQ berfungsi sebagai guru catur pribadi yang gratis, tanpa daftar, dan tanpa iklan yang mengganggu analisis.</p>
+  </section>
+
   <footer>Engine Stockfish 18 · jalan 100% di HP kamu (WebAssembly) · tanpa server · gratis</footer>
 </main>
 
@@ -138,8 +208,8 @@
   <div class="dbg-head">DEBUG <span id="dbg-clock"></span></div>
   <pre id="dbg-log"></pre>
 </div>
-<script src="js/engine.js?v=21"></script>
-<script type="module" src="js/app.js?v=21"></script>
+<script src="js/engine.js?v=22"></script>
+<script type="module" src="js/app.js?v=22"></script>
 <script>
 /* Service worker: cache engine + app biar load berikutnya instan & offline-ready. */
 if ("serviceWorker" in navigator) {

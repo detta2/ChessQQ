@@ -1,6 +1,7 @@
 /* ChessQQ — UI papan, editor, panah prediksi, hasil analisis, mentor. */
-import { Chess, validateFen } from "./chess.js?v=21";
-import { mentorFor, alasanSingkat } from "./mentor.js?v=21";
+import { Chess, validateFen } from "./chess.js?v=22";
+import { mentorFor, alasanSingkat } from "./mentor.js?v=22";
+import { detectOpening, SCENARIOS } from "./openings.js?v=22";
 
 const $ = (id) => document.getElementById(id);
 const esc = (s) => String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
@@ -30,6 +31,9 @@ const ICONS = {
   back: _ic('<path d="M19 12H5"/><path d="M11 6l-6 6 6 6"/>'),
   warn: _ic('<path d="M12 3L2 21h20z"/><path d="M12 10v5"/><path d="M12 18.5v.5"/>'),
   target: _ic('<circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="5"/><circle cx="12" cy="12" r="1" fill="currentColor"/>'),
+  share: _ic('<circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><path d="M8.6 13.5l6.8 4M15.4 6.5l-6.8 4"/>'),
+  undo: _ic('<path d="M9 14L4 9l5-5"/><path d="M4 9h10a6 6 0 0 1 0 12h-3"/>'),
+  redo: _ic('<path d="M15 14l5-5-5-5"/><path d="M20 9H10a6 6 0 0 0 0 12h3"/>'),
 };
 function paintIcons(root) {
   (root || document).querySelectorAll("[data-ic]").forEach((el) => {
@@ -54,6 +58,12 @@ let lastDepth = 0;
 let autoSide = null; // 'w' | 'b' | null — warna yang dimainkan bot
 let autoToken = 0;   // dibatalkan tiap ada aksi baru (ganti mode / stop)
 const engine = new ChessEngine();
+
+/* ---------- state v22: riwayat main bebas, pelatih, autosave ---------- */
+let gameBaseFen = chess.fen(); // FEN awal urutan langkah main bebas saat ini
+let redoStack = [];            // langkah (verbose) yang di-undo, untuk Redo
+let coachToken = 0;            // membatalkan penilaian pelatih yang basi
+const START_FEN = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
 
 /* ---------- papan ---------- */
 function boardOf(fen) {
@@ -105,6 +115,39 @@ function renderBoard(fen) {
 
 /* ---------- panah ---------- */
 let lastArrowKey = "";
+function drawOneArrow(from, to, color, w) {
+  const [x1, y1] = sqCenter(from), [x2, y2] = sqCenter(to);
+  const dx = x2 - x1, dy = y2 - y1, len = Math.hypot(dx, dy) || 1;
+  const ux = dx / len, uy = dy / len, nx = -uy, ny = ux;
+  const hw = w * 1.4;
+  const headLen = Math.min(66, len * 0.45);
+  const sx = x1 + ux * 16, sy = y1 + uy * 16;
+  const tx = x2 - ux * 26, ty = y2 - uy * 26;
+  const bx = tx - ux * headLen, by = ty - uy * headLen;
+  const d =
+    `M${sx + nx * w / 2},${sy + ny * w / 2}` +
+    `L${bx + nx * w / 2},${by + ny * w / 2}` +
+    `L${bx + nx * hw},${by + ny * hw}` +
+    `L${tx},${ty}` +
+    `L${bx - nx * hw},${by - ny * hw}` +
+    `L${bx - nx * w / 2},${by - ny * w / 2}` +
+    `L${sx - nx * w / 2},${sy - ny * w / 2}Z`;
+  const g = document.createElementNS("http://www.w3.org/2000/svg", "g");
+  g.setAttribute("class", "arrow");
+  const shadow = document.createElementNS("http://www.w3.org/2000/svg", "path");
+  shadow.setAttribute("d", d);
+  shadow.setAttribute("fill", "rgba(5,6,9,.6)");
+  shadow.setAttribute("transform", "translate(11,13)");
+  const p = document.createElementNS("http://www.w3.org/2000/svg", "path");
+  p.setAttribute("d", d);
+  p.setAttribute("fill", color);
+  p.setAttribute("stroke", "rgba(255,255,255,.35)");
+  p.setAttribute("stroke-width", "3");
+  p.setAttribute("stroke-linejoin", "round");
+  p.setAttribute("fill-opacity", ".96");
+  g.appendChild(shadow); g.appendChild(p);
+  arrowsEl.appendChild(g);
+}
 function drawArrows(moves) {
   const top = moves.slice(0, 3);
   const key = top.map((m) => m.uci).join("|");
@@ -112,47 +155,25 @@ function drawArrows(moves) {
   lastArrowKey = key;
   arrowsEl.innerHTML = "";
   const widths = [30, 26, 22];
-  top.reverse().forEach((m, ri) => {
-    const i = top.length - 1 - ri; // i=0 (terbaik) digambar paling atas
-    const c = ARROW_COLORS[i];
-    const [x1, y1] = sqCenter(m.from), [x2, y2] = sqCenter(m.to);
-    const dx = x2 - x1, dy = y2 - y1, len = Math.hypot(dx, dy) || 1;
-    const ux = dx / len, uy = dy / len, nx = -uy, ny = ux;
-    const w = widths[i] || 22, hw = w * 1.4;
-    const headLen = Math.min(66, len * 0.45);
-    const sx = x1 + ux * 16, sy = y1 + uy * 16;          // pangkal
-    const tx = x2 - ux * 26, ty = y2 - uy * 26;          // ujung
-    const bx = tx - ux * headLen, by = ty - uy * headLen; // dasar kepala
-    const d =
-      `M${sx + nx * w / 2},${sy + ny * w / 2}` +
-      `L${bx + nx * w / 2},${by + ny * w / 2}` +
-      `L${bx + nx * hw},${by + ny * hw}` +
-      `L${tx},${ty}` +
-      `L${bx - nx * hw},${by - ny * hw}` +
-      `L${bx - nx * w / 2},${by - ny * w / 2}` +
-      `L${sx - nx * w / 2},${sy - ny * w / 2}Z`;
-    const g = document.createElementNS("http://www.w3.org/2000/svg", "g");
-    g.setAttribute("class", "arrow");
-    // gaya "3D Dimensi": bayangan offset di bawah-kanan + panah utama + kilau tepi
-    const shadow = document.createElementNS("http://www.w3.org/2000/svg", "path");
-    shadow.setAttribute("d", d);
-    shadow.setAttribute("fill", "rgba(5,6,9,.6)");
-    shadow.setAttribute("transform", "translate(11,13)");
-    const p = document.createElementNS("http://www.w3.org/2000/svg", "path");
-    p.setAttribute("d", d);
-    p.setAttribute("fill", c);
-    p.setAttribute("stroke", "rgba(255,255,255,.35)");
-    p.setAttribute("stroke-width", "3");
-    p.setAttribute("stroke-linejoin", "round");
-    p.setAttribute("fill-opacity", ".96");
-    g.appendChild(shadow); g.appendChild(p);
-    arrowsEl.appendChild(g);
-  });
+  for (let i = top.length - 1; i >= 0; i--)
+    drawOneArrow(top[i].from, top[i].to, ARROW_COLORS[i], widths[i] || 22);
+}
+/* Pasangan pelatih: hijau = saran langkah terbaik, merah = prediksi balasan musuh. */
+function drawCoachPair(best, replyUci) {
+  const key = "pair|" + (best ? best.uci : "") + "|" + (replyUci || "");
+  if (key === lastArrowKey) return;
+  lastArrowKey = key;
+  arrowsEl.innerHTML = "";
+  if (replyUci) drawOneArrow(replyUci.slice(0, 2), replyUci.slice(2, 4), "#ef4444", 25);
+  if (best) drawOneArrow(best.from, best.to, "#22c55e", 30);
 }
 function clearArrows() { arrowsEl.innerHTML = ""; lastArrowKey = ""; }
 
 /* ---------- FEN ---------- */
-function syncFen() { fenInput.value = chess.fen(); fenInput.classList.remove("bad"); }
+function syncFen() {
+  fenInput.value = chess.fen(); fenInput.classList.remove("bad");
+  updateOpeningLine(); saveState();
+}
 function loadFenString(s) {
   s = (s || "").trim();
   if (!s) return false;
@@ -160,7 +181,8 @@ function loadFenString(s) {
   if (!v.ok) { fenInput.classList.add("bad"); setStatus("FEN tidak valid: " + v.error); return false; }
   exitPgn();
   chess.load(s);
-  exitPreview(); syncFen(); renderBoard(); clearArrows();
+  gameBaseFen = chess.fen(); redoStack = [];
+  exitPreview(); syncFen(); renderBoard(); clearArrows(); renderHistory(); resetCoach();
   fenInput.classList.remove("bad");
   maybeAutoPlay();
   return true;
@@ -175,7 +197,10 @@ $("btn-paste").addEventListener("click", async () => {
   } catch (e) { setStatus("Clipboard tidak bisa dibaca — ketik/tempel manual."); fenInput.focus(); }
 });
 $("btn-start").addEventListener("click", () => {
-  chess.reset(); exitPgn(); exitPreview(); syncFen(); renderBoard(); clearArrows(); hideResults();
+  chess.reset(); exitPgn(); exitPreview();
+  gameBaseFen = chess.fen(); redoStack = [];
+  syncFen(); renderBoard(); clearArrows(); hideResults(); renderHistory(); resetCoach();
+  $("scenario-note").hidden = true; $("scenario-sel").value = "";
   setStatus("Posisi awal dimuat.");
   maybeAutoPlay();
 });
@@ -184,7 +209,8 @@ $("btn-clear").addEventListener("click", () => {
   chess.put({ type: "k", color: "w" }, "e1");
   chess.put({ type: "k", color: "b" }, "e8");
   exitPgn();
-  exitPreview(); syncFen(); renderBoard(); clearArrows(); hideResults();
+  gameBaseFen = chess.fen(); redoStack = [];
+  exitPreview(); syncFen(); renderBoard(); clearArrows(); hideResults(); renderHistory(); resetCoach();
   setStatus("Papan dibersihkan (raja tetap). Nyalakan ✏️ Edit untuk susun.");
   maybeAutoPlay();
 });
@@ -337,6 +363,7 @@ $("btn-online-go").addEventListener("click", async () => {
 $("btn-flip").addEventListener("click", () => {
   orientation = orientation === "w" ? "b" : "w";
   renderBoard(previewFen); drawArrows(lastResults);
+  saveState();
 });
 
 /* ---------- editor ---------- */
@@ -429,12 +456,17 @@ function tryMove(from, to) {
   try {
     const p = chess.get(from);
     if (!p) return false;
+    const fenBefore = chess.fen();
+    const wasPgn = !!pgn;
     const promo = (p.type === "p" && (to[1] === "8" || to[1] === "1")) ? "q" : undefined;
     const m = chess.move({ from, to, promotion: promo });
     if (!m) return false;
     exitPgn();
-    exitPreview(); syncFen(); renderBoard(); clearArrows(); hideResults();
-    setStatus("Langkah: " + m.san + " — tekan Analisis untuk prediksi baru.");
+    if (wasPgn) gameBaseFen = fenBefore;
+    redoStack = [];
+    exitPreview(); syncFen(); renderBoard(); clearArrows(); hideResults(); renderHistory();
+    setStatus("Langkah: " + m.san + " — pelatih menilai, atau tekan Analisis untuk prediksi lengkap.");
+    coachClassify(fenBefore, m);
     maybeAutoPlay();
     return true;
   } catch (e) { return false; }
@@ -530,12 +562,25 @@ function pvToSans(fen, pv, n) {
   } catch (e) { /* berhenti */ }
   return out;
 }
+function evalTextOf(wp, kind) {
+  if (kind === "mate")
+    return wp > 0 ? "Evaluasi: # (Putih Menang — Skakmat Paksa)" : "Evaluasi: # (Hitam Menang — Skakmat Paksa)";
+  const p = wp / 100, a = Math.abs(p);
+  const side = p > 0 ? "Putih" : "Hitam";
+  let cat = "Seimbang";
+  if (a >= 0.25 && a < 0.75) cat = side + " Unggul Tipis";
+  else if (a >= 0.75 && a < 1.75) cat = side + " Unggul";
+  else if (a >= 1.75 && a < 3.5) cat = side + " Unggul Besar";
+  else if (a >= 3.5) cat = side + " Menang Telak";
+  return `Evaluasi: ${p > 0 ? "+" : ""}${p.toFixed(2)} (${cat})`;
+}
 function setEvalBar(wp, kind) {
   let pct;
   if (kind === "mate") pct = wp > 0 ? 100 : 0;
   else pct = 50 + 50 * (2 / (1 + Math.exp(-0.00368208 * wp)) - 1);
   $("evalfill").style.height = pct.toFixed(1) + "%";
   $("evallabel").textContent = kind === "mate" ? (wp > 0 ? "#+" : "#−") : (wp / 100).toFixed(1);
+  $("eval-text").textContent = evalTextOf(wp, kind);
 }
 function onEngineUpdate(lines, d) {
   lastDepth = d;
@@ -549,10 +594,13 @@ function onEngineUpdate(lines, d) {
       eval: fmtEval(wp, L.kind), wp, kind: L.kind,
       score: L.val, // mentah, relatif ke pihak yang jalan (untuk mentor)
       pv: pvToSans(fen, L.pv, 12),
+      pvUci: L.pv.slice(0, 12),
     };
   });
   renderResults();
-  drawArrows(lastResults);
+  if (lastResults[0] && lastResults[0].pvUci && lastResults[0].pvUci[1])
+    drawCoachPair(lastResults[0], lastResults[0].pvUci[1]); // hijau: terbaik · merah: balasan musuh
+  else drawArrows(lastResults);
   if (lastResults[0]) setEvalBar(lastResults[0].wp, lastResults[0].kind);
   setStatus(`Mikir… depth ${d}/${depth} — panah update live.`);
 }
@@ -585,6 +633,7 @@ function renderResults() {
     li.addEventListener("click", () => previewMove(i));
     ol.appendChild(li);
   });
+  coachFromResults();
   renderMentor();
 }
 function hideResults() { $("results-card").hidden = true; closeMentor(); lastResults = []; }
@@ -640,7 +689,8 @@ function renderMentor(results) {
     try {
       const u = m.uci;
       chess.move({ from: u.slice(0, 2), to: u.slice(2, 4), promotion: u.length > 4 ? u[4] : undefined });
-      exitPreview(); syncFen(); renderBoard(); clearArrows(); hideResults();
+      redoStack = [];
+      exitPreview(); syncFen(); renderBoard(); clearArrows(); hideResults(); renderHistory();
       setStatus("Mentor memainkan " + m.langkah + " — tekan Analisis untuk lanjut.");
       maybeAutoPlay();
     } catch (e) { setStatus("Langkah mentor gagal dimainkan."); }
@@ -677,6 +727,7 @@ $("depth-seg").addEventListener("click", (e) => {
   if (!b) return;
   depth = +b.dataset.d;
   [...$("depth-seg").children].forEach((x) => x.classList.toggle("on", x === b));
+  saveState();
 });
 let stopWatchdog = null; // timer "dihentikan paksa" — harus dibatalkan tiap aksi baru
 $("btn-analyze").addEventListener("click", async () => {
@@ -755,7 +806,7 @@ function maybeAutoPlay() {
             promotion: bestUci.length > 4 ? bestUci[4] : undefined,
           });
           if (!mv) return;
-          exitPreview(); syncFen(); renderBoard(); clearArrows(); hideResults();
+          exitPreview(); syncFen(); renderBoard(); clearArrows(); hideResults(); renderHistory();
           const sesudah = new Chess(chess.fen());
           let akhir = "";
           if (sesudah.isCheckmate()) akhir = " — SKAKMAT! 🏆";
@@ -774,19 +825,312 @@ $("auto-sel").addEventListener("change", (e) => {
     setStatus(`🤖 Bot pegang ${autoSide === "w" ? "Putih" : "Hitam"}. Kamu main sisanya — perhatikan gerakannya buat belajar.`);
     maybeAutoPlay();
   } else {
-    setStatus("Auto mati — kamu yang main penuh.");
+    setStatus("Mode Analisis Bebas — kamu main kedua warna, pelatih menilai setiap langkahmu.");
   }
+  saveState();
 });
 engine.onError((msg) => {
   setStatus("Gagal: " + msg + " Coba tekan Analisis lagi.");
   $("progress").hidden = true; setAnalyzing(false);
 });
 
+/* ---------- v22: riwayat main bebas (undo/redo/klik) ---------- */
+function renderHistory() {
+  let sans = [];
+  try { sans = chess.history(); } catch (e) { sans = []; }
+  const card = $("history-card");
+  if (!sans.length) { card.hidden = true; return; }
+  card.hidden = false;
+  let html = "";
+  for (let k = 0; k < sans.length; k += 2) {
+    html += `<span class="pgn-no">${k / 2 + 1}.</span>`;
+    html += `<button class="pgn-mv${k + 1 === sans.length ? " on" : ""}" data-i="${k + 1}">${esc(sans[k])}</button>`;
+    if (sans[k + 1])
+      html += `<button class="pgn-mv${k + 2 === sans.length ? " on" : ""}" data-i="${k + 2}">${esc(sans[k + 1])}</button>`;
+  }
+  const el = $("history-moves");
+  el.innerHTML = html;
+  el.querySelectorAll(".pgn-mv").forEach((b) =>
+    b.addEventListener("click", () => gotoHistory(+b.dataset.i)));
+}
+function gotoHistory(i) {
+  let guard = 600;
+  while (guard-- > 0) {
+    let n = 0; try { n = chess.history().length; } catch (e) { break; }
+    if (n <= i) break;
+    let v = null;
+    try { const h = chess.history({ verbose: true }); v = h[h.length - 1]; } catch (e) { /* abaikan */ }
+    chess.undo();
+    let n2 = 0; try { n2 = chess.history().length; } catch (e) { break; }
+    if (n2 === n) break;
+    if (v) redoStack.push(v);
+  }
+  while (guard-- > 0) {
+    let n = 0; try { n = chess.history().length; } catch (e) { break; }
+    if (n >= i || !redoStack.length) break;
+    const v = redoStack.pop();
+    try { chess.move({ from: v.from, to: v.to, promotion: v.promotion || undefined }); }
+    catch (e) { break; }
+  }
+  coachToken++;
+  exitPreview(); syncFen(); renderBoard(); clearArrows(); hideResults(); renderHistory(); resetCoach();
+  setStatus("Posisi langkah ke-" + i + " — mainkan langkah baru dari sini, atau Redo untuk maju lagi.");
+}
+$("btn-undo").addEventListener("click", () => {
+  let n = 0; try { n = chess.history().length; } catch (e) { /* abaikan */ }
+  if (n > 0) gotoHistory(n - 1); else setStatus("Belum ada langkah untuk di-undo.");
+});
+$("btn-redo").addEventListener("click", () => {
+  let n = 0; try { n = chess.history().length; } catch (e) { /* abaikan */ }
+  if (redoStack.length) gotoHistory(n + 1); else setStatus("Tidak ada langkah untuk di-redo.");
+});
+
+/* ---------- v22: bagikan posisi (?fen=) ---------- */
+$("btn-share").addEventListener("click", async () => {
+  const url = location.origin + location.pathname + "?fen=" + encodeURIComponent(chess.fen());
+  try {
+    await navigator.clipboard.writeText(url);
+    setStatus("🔗 Link posisi tersalin! Kirim ke temanmu — mereka langsung melihat posisi papan yang sama.");
+  } catch (e) {
+    window.prompt("Salin link posisi ini:", url);
+  }
+});
+
+/* ---------- v22: deteksi pembukaan ---------- */
+function updateOpeningLine() {
+  let op = null;
+  try {
+    const sans = chess.history();
+    if (sans.length >= 2) op = detectOpening(sans);
+  } catch (e) { op = null; }
+  const el = $("opening-line");
+  if (op) {
+    $("opening-name").textContent = op.name;
+    $("opening-desc").textContent = op.desc;
+    el.hidden = false;
+  } else el.hidden = true;
+}
+
+/* ---------- v22: skenario belajar ---------- */
+const scSel = $("scenario-sel");
+SCENARIOS.forEach((sc) => {
+  const o = document.createElement("option");
+  o.value = sc.id; o.textContent = sc.label;
+  scSel.appendChild(o);
+});
+scSel.addEventListener("change", () => {
+  const sc = SCENARIOS.find((x) => x.id === scSel.value);
+  if (!sc) return;
+  const note = $("scenario-note");
+  note.textContent = "🎓 " + sc.label + " — " + sc.note;
+  note.hidden = false;
+  resetCoach();
+  if (sc.kind === "fen") {
+    if (loadFenString(sc.fen)) setStatus("Skenario dimuat: " + sc.label);
+  } else {
+    const parts = [];
+    sc.moves.forEach((s, i) => { if (i % 2 === 0) parts.push((i / 2 + 1) + "."); parts.push(s); });
+    if (openPgn(parts.join(" ") + " *")) {
+      gameBaseFen = START_FEN;
+      setStatus("Skenario dimuat: " + sc.label + " — posisinya siap dimainkan dari langkah terakhir.");
+    } else setStatus("Skenario gagal dimuat.");
+  }
+});
+
+/* ---------- v22: Kotak Pelatih (klasifikasi langkah) ---------- */
+const NAMA_BIDAK = { p: "Pion", n: "Kuda", b: "Gajah", r: "Benteng", q: "Menteri", k: "Raja" };
+const NILAI_BIDAK = { p: 100, n: 320, b: 330, r: 500, q: 900, k: 0 };
+function resetCoach() {
+  coachToken++;
+  $("coach-verdict").innerHTML = '<span class="coach-badge none">Menunggu langkahmu</span>';
+  $("coach-explain").innerHTML = "<li>Mainkan satu langkah di papan — pelatih menilai langkahmu dan menjelaskan alasannya dalam Bahasa Indonesia.</li>";
+  $("coach-enemy").textContent = "— tekan Analisis atau mainkan langkah —";
+  $("coach-best").textContent = "— tekan Analisis atau mainkan langkah —";
+}
+function coachSetCells(best, fen) {
+  if (!best) return;
+  try { $("coach-best").innerHTML = `<b>${esc(best.san)}</b> — ${esc(alasanSingkat(fen, best))}`; }
+  catch (e) { $("coach-best").innerHTML = `<b>${esc(best.san)}</b>`; }
+  const replyUci = best.pvUci && best.pvUci[1];
+  const replySan = best.pv && best.pv[1];
+  if (replyUci && replySan) {
+    try {
+      const c = new Chess(fen);
+      c.move({ from: best.from, to: best.to, promotion: best.uci.length > 4 ? best.uci[4] : undefined });
+      const robj = { san: replySan, uci: replyUci, kind: "cp", score: 0, from: replyUci.slice(0, 2), to: replyUci.slice(2, 4) };
+      $("coach-enemy").innerHTML = `<b>${esc(replySan)}</b> — ${esc(alasanSingkat(c.fen(), robj))}`;
+    } catch (e) { $("coach-enemy").innerHTML = `<b>${esc(replySan)}</b>`; }
+  } else {
+    $("coach-enemy").textContent = "Tidak ada balasan berarti — lawan sangat tertekan di posisi ini.";
+  }
+}
+function coachFromResults() {
+  if (lastResults[0]) coachSetCells(lastResults[0], chess.fen());
+}
+/* kumpulkan analisis singkat (depth kecil) sebagai janji — untuk pelatih */
+function analyzeCollect(fen, d) {
+  return new Promise((resolve) => {
+    let lastLines = null;
+    engine.load().then(() => {
+      engine.analyze(fen, d,
+        (lines) => { lastLines = lines; },
+        () => {
+          const L = lastLines && lastLines.filter(Boolean)[0];
+          if (!L || !L.pv || !L.pv[0]) { resolve(null); return; }
+          const uci = L.pv[0];
+          resolve({ top: {
+            uci, from: uci.slice(0, 2), to: uci.slice(2, 4),
+            san: uciToSan(fen, uci) || uci,
+            cp: L.kind === "mate" ? (L.val > 0 ? 9000 : -9000) : L.val,
+            kind: L.kind, score: L.val,
+            pv: pvToSans(fen, L.pv, 12),
+            pvUci: L.pv.slice(0, 12),
+          } });
+        });
+    }).catch(() => resolve(null));
+  });
+}
+/* peta petak yang diserang/dijaga satu warna (giliran diputar paksa di FEN) */
+function attackSquares(fen, color) {
+  const parts = fen.split(" ");
+  parts[1] = color; parts[3] = "-";
+  let c;
+  try { c = new Chess(parts.join(" ")); } catch (e) { return new Set(); }
+  const b = c.board(); const set = new Set();
+  for (let r = 0; r < 8; r++) for (let f = 0; f < 8; f++) {
+    const cell = b[r][f];
+    if (!cell || cell.color !== color) continue;
+    const sq = "abcdefgh"[f] + (8 - r);
+    if (cell.type === "p") {
+      const nr = (8 - r) + (color === "w" ? 1 : -1);
+      for (const df of [-1, 1]) {
+        const nf = f + df;
+        if (nf >= 0 && nf < 8 && nr >= 1 && nr <= 8) set.add("abcdefgh"[nf] + nr);
+      }
+    } else {
+      try { c.moves({ square: sq, verbose: true }).forEach((mv) => set.add(mv.to)); } catch (e) { /* abaikan */ }
+    }
+  }
+  return set;
+}
+function hangingPieces(fen, color) {
+  const opp = color === "w" ? "b" : "w";
+  const atk = attackSquares(fen, opp), def = attackSquares(fen, color);
+  let c;
+  try { c = new Chess(fen); } catch (e) { return []; }
+  const b = c.board(); const out = [];
+  for (let r = 0; r < 8; r++) for (let f = 0; f < 8; f++) {
+    const cell = b[r][f];
+    if (!cell || cell.color !== color || cell.type === "k") continue;
+    const sq = "abcdefgh"[f] + (8 - r);
+    if (atk.has(sq) && !def.has(sq))
+      out.push({ sq, nama: NAMA_BIDAK[cell.type], val: NILAI_BIDAK[cell.type] });
+  }
+  return out.sort((a, z) => z.val - a.val);
+}
+async function coachClassify(fenBefore, m) {
+  const token = ++coachToken;
+  const fenAfter = chess.fen();
+  const uci = m.from + m.to + (m.promotion || "");
+  const verdictEl = $("coach-verdict"), explainEl = $("coach-explain");
+  try {
+    if (new Chess(fenAfter).isCheckmate()) {
+      verdictEl.innerHTML = '<span class="coach-badge best">💎 Terbaik — SKAKMAT! 🏆</span>';
+      explainEl.innerHTML = `<li><b>${esc(m.san)}</b> mengakhiri permainan dengan skakmat. Kerja bagus!</li>`;
+      $("coach-enemy").textContent = "Permainan selesai — tidak ada balasan.";
+      return;
+    }
+  } catch (e) { /* abaikan */ }
+  if (engine.isBusy()) {
+    explainEl.innerHTML = "<li>Engine sedang dipakai analisis utama — penilaian pelatih dilewati untuk langkah ini. Tekan Analisis untuk melihat saran terbaik.</li>";
+    return;
+  }
+  verdictEl.innerHTML = '<span class="coach-badge none">⏳ Pelatih menilai langkah ' + esc(m.san) + "…</span>";
+  let r1 = null, r2 = null;
+  try {
+    r1 = await analyzeCollect(fenBefore, 10);
+    if (token !== coachToken) return;
+    r2 = await analyzeCollect(fenAfter, 10);
+    if (token !== coachToken) return;
+  } catch (e) { /* ditangani di bawah */ }
+  if (!r1 || !r1.top) {
+    explainEl.innerHTML = "<li>Pelatih tidak sempat menilai langkah ini (engine sibuk). Tekan Analisis untuk penilaian manual.</li>";
+    return;
+  }
+  const before = r1.top.cp;
+  const afterMover = r2 && r2.top ? -r2.top.cp : 0;
+  const loss = Math.max(0, before - afterMover);
+  const isBest = uci === r1.top.uci;
+  let cls, badge;
+  if (isBest) { cls = "best"; badge = "💎 Terbaik"; }
+  else if (loss <= 50) { cls = "good"; badge = "👍 Bagus"; }
+  else if (loss <= 100) { cls = "inaccuracy"; badge = "⚠️ Kurang Tepat"; }
+  else if (loss <= 250) { cls = "mistake"; badge = "❌ Kesalahan"; }
+  else { cls = "blunder"; badge = "💀 Blunder"; }
+  verdictEl.innerHTML = `<span class="coach-badge ${cls}">${badge}: ${esc(m.san)}</span>`;
+  const pawn = (cp) => (cp >= 0 ? "+" : "") + (cp / 100).toFixed(2);
+  const lines = [];
+  lines.push(`Evaluasi berubah dari ${pawn(before)} menjadi ${pawn(afterMover)} dari sudut pandang ${m.color === "w" ? "putih" : "hitam"}${isBest ? " — persis pilihan mesin." : ` — kehilangan sekitar ${(loss / 100).toFixed(2)} pion.`}`);
+  if (!isBest && r1.top.san) lines.push(`Mesin lebih suka <b>${esc(r1.top.san)}</b> di posisi sebelum langkah ini.`);
+  if (m.captured) lines.push(`Langkah ini menangkap ${NAMA_BIDAK[m.captured] || "bidak"} lawan di petak ${m.to}.`);
+  try { if (new Chess(fenAfter).inCheck()) lines.push("Langkah ini memberi SKAK — lawan wajib merespons dan rencananya tertunda."); } catch (e) { /* abaikan */ }
+  if (["d4", "e4", "d5", "e5"].includes(m.to)) lines.push(`Bidakmu kini menempati petak pusat ${m.to} — menguasai pusat memudahkan serangan dan membatasi lawan.`);
+  if ((m.piece === "n" || m.piece === "b") && (m.from[1] === "1" || m.from[1] === "8")) lines.push("Perkembangan bagus: perwira ringan keluar dari baris belakang dan ikut bermain.");
+  const hang = hangingPieces(fenAfter, m.color);
+  if (hang.length) lines.push(`⚠️ Hati-hati: ${hang[0].nama} di ${hang[0].sq} sekarang tidak terjaga — lawan bisa memakannya secara gratis.`);
+  if ((cls === "blunder" || cls === "mistake") && !hang.length) lines.push("Lain kali, sebelum melangkah cek 3 hal: bidakku ada yang menggantung? petak tujuan diserang? langkahku membuka serangan ke rajaku?");
+  explainEl.innerHTML = lines.map((l) => `<li>${l}</li>`).join("");
+  if (r2 && r2.top) {
+    coachSetCells(r2.top, fenAfter);
+    drawCoachPair(r2.top, r2.top.pvUci && r2.top.pvUci[1]);
+    const turnAfter = fenAfter.split(" ")[1];
+    setEvalBar(turnAfter === "w" ? r2.top.cp : -r2.top.cp, r2.top.kind);
+  }
+}
+
+/* ---------- v22: auto-save localStorage ---------- */
+function saveState() {
+  try {
+    localStorage.setItem("chessqq-v22", JSON.stringify({
+      fen: chess.fen(), orientation, auto: autoSide, depth,
+    }));
+  } catch (e) { /* abaikan */ }
+}
+
 /* ---------- init ---------- */
 buildPalette();
+(function initRestore() {
+  // 1) posisi dari link yang dibagikan (?fen=...) — prioritas tertinggi
+  let qfen = null;
+  try { qfen = new URLSearchParams(location.search).get("fen"); } catch (e) { /* abaikan */ }
+  if (qfen && loadFenString(qfen)) {
+    setStatus("Posisi dari link yang dibagikan dimuat — tekan Analisis untuk memprediksi langkah.");
+    return;
+  }
+  // 2) auto-save terakhir
+  try {
+    const sv = JSON.parse(localStorage.getItem("chessqq-v22") || "null");
+    if (sv && sv.fen && validateFen(sv.fen).ok) {
+      chess.load(sv.fen);
+      gameBaseFen = chess.fen();
+      if (sv.orientation === "b") orientation = "b";
+      if (sv.depth && [10, 16, 22].includes(+sv.depth)) {
+        depth = +sv.depth;
+        [...$("depth-seg").children].forEach((x) => x.classList.toggle("on", +x.dataset.d === depth));
+      }
+      if (sv.auto === "w" || sv.auto === "b") {
+        autoSide = sv.auto;
+        $("auto-sel").value = sv.auto;
+      }
+      setStatus("Posisi terakhirmu dipulihkan otomatis.");
+    }
+  } catch (e) { /* abaikan */ }
+})();
 syncFen();
 renderBoard();
+renderHistory();
 setEvalBar(20, "cp");
+if (autoSide) maybeAutoPlay();
 
 /* Debug: ?debug=1 menampilkan log mentah engine */
 if (location.search.includes("debug")) {
